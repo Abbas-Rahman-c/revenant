@@ -7,7 +7,7 @@ inclusion: always
 ## Stack
 
 - **Language:** TypeScript (strict mode) everywhere. No plain JavaScript source files.
-- **Package manager:** pnpm workspaces (monorepo: `circle`, `circle-mcp`, `apps/*`, `benchmark`).
+- **Package manager:** npm workspaces (monorepo: `site`, `circle`, `circle-mcp`, `apps/*`, `benchmark`).
 - **Apps:** Vite + React. Static output only, deployable to free static hosting. No backend server.
 - **Local AI libraries** (pick per model type, record the choice in `local-ai.md`):
   - Transformers.js (`@huggingface/transformers`) for speech-to-text, embeddings, vision and small models

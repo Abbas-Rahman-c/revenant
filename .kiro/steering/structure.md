@@ -7,6 +7,7 @@ inclusion: always
 ```
 summoning-circle/
 ├── .kiro/              specs, steering, hooks (always committed)
+├── site/               the public landing site (Vite + React)
 ├── circle/             the skeleton runtime, published as the `circle` package
 │   └── src/
 │       ├── index.ts    public API only: summon(), types, CircleError

@@ -30,3 +30,6 @@ Thumbs.db
 .idea/
 
 # IMPORTANT: never ignore .kiro/ (the hackathon rules require it in the repo)
+
+# Local assistant config
+.claude/
