@@ -1,0 +1,32 @@
+# Dependencies and builds
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Model files: never commit weights, they are downloaded at runtime
+*.onnx
+*.bin
+*.safetensors
+*.gguf
+models-cache/
+
+# Logs and OS junk
+*.log
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# IMPORTANT: never ignore .kiro/ (the hackathon rules require it in the repo)
