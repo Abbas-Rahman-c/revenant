@@ -3,47 +3,49 @@ inclusion: fileMatch
 fileMatchPattern: "{apps,site}/**"
 ---
 
-# Design language: chalk on slate
+# Design language: the reanimation lab
 
-A ritual circle drawn in chalk on a slate floor, lit by candles. Occult and handmade, never gory or cheap. One bold element per screen; everything else stays quiet. Full rationale: `planning/design-plan.md`.
+The page is a black-and-white 1930s film still, and **only electricity has color**. Full rationale: `planning/design-plan.md`.
 
-## Palette (CSS custom properties)
+## Palette (CSS custom properties in `site/src/styles.css`)
 
 | Token | Value | Use |
 |---|---|---|
-| `--slate` | `#23272e` | page background |
-| `--slate-deep` | `#1a1d22` | wells, code blocks, inset panels |
-| `--chalk` | `#ebe6da` | primary text and drawn lines |
-| `--chalk-dim` | `#a9a597` | secondary text, faint lines |
-| `--candle` | `#f2a541` | anything the user can act on |
-| `--spirit` | `#b9a6ff` | anything the AI produced |
-| `--blood` | `#ff6b6b` | errors only |
+| `--stone` | `#2b2a2e` | page background |
+| `--stone-deep` | `#1f1e22` | wells, inset surfaces |
+| `--line` | `#4a4850` | rules and outlines |
+| `--silver` | `#d9d6cf` | primary text, engraving lines |
+| `--silver-dim` | `#a19d95` | secondary text |
+| `--copper` / `--copper-hi` | `#c47a3a` / `#e0995a` | things the user can act on: the switch, jar lids, links |
+| `--arc` / `--arc-hot` | `#9fc2ff` / `#e6f0ff` | electricity and anything the AI produced |
+| `--suture` | `#b23a3a` | stitch thread only |
 
-Color has meaning: candle means "you can do this", spirit means "a model made this". Don't use them decoratively.
-
-App worlds (each app owns one): **Possessed** `#9bff5a` on `#16210f`; **3 AM** `#9cc3ff` on `#121a2a`.
+Never add a color outside these. Never use green-on-black.
 
 ## Type
 
-- **Display:** IM Fell English, for big headings only.
-- **Body and UI:** Atkinson Hyperlegible.
-- **Code:** JetBrains Mono, for real code only, not as decoration.
-- Scale: 14 / 18 / 24 / 32 / 42 / 56 / 75 px. Sentence case. No all-caps labels.
-- Fonts are self-hosted with `@fontsource` packages, never loaded from a third-party CDN.
+- **Display:** Big Shoulders Display 900/700, for headings and part names.
+- **Body:** Newsreader.
+- **Mono:** IBM Plex Mono, only for real instrument readouts (sizes, counts, gauges).
+- Sentence case. No all-caps labels. Numbers in readouts use tabular figures.
 
 ## Motion
 
-- Motion answers the user (summon, expand, confirm). The only ambient motion is a slow candle flicker.
-- Every animation has a `prefers-reduced-motion` fallback.
+- One orchestrated moment: stitch the parts, throw the switch, the coils charge, lightning arcs, the creature wakes. Everything else stays still.
+- UI easing `cubic-bezier(0.2, 0, 0, 1)`. Pressed buttons scale to 0.96 over 150 ms. Draggable controls use critically damped springs from the current value, rubber-band at the ends, and can be interrupted.
+- At most one soft full-screen flash, never strobing. Under `prefers-reduced-motion` there is no flight, no lightning and no flash: states cross-fade.
+- Hover styles only inside `@media (hover: hover)`.
 
-## Signature components
+## The creature
 
-- **Summoning circle:** chalk rings and sigils that light in candle color as model chunks download. It shows real progress (bytes, model name, size). Never a fake spinner; label it as a preview when the data is simulated.
-- **Spirit card:** which model is running, on which backend (WebGPU or WASM), and its tier.
-- **Offline seal:** lights up when the app runs with no network.
+Our own anatomical-engraving bust: sutures, copper temple clamps, sockets for five parts. **No flat head, no neck bolts, no green skin**, and no names, imagery or makeup design from any film.
+
+## Sound
+
+Off by default, toggled in the header, fully synthesized with Web Audio. No audio files.
 
 ## Accessibility
 
-- Text contrast at least 4.5:1 on `--slate` and `--slate-deep`.
-- Anything an app speaks is also captioned on screen.
-- Every control is keyboard reachable with a visible `--candle` focus ring.
+- Text contrast at least 4.5:1. Every control has an accessible name and a visible copper focus ring.
+- The knife switch works by drag, click and keyboard (Enter or Space).
+- Anything the creature says is shown as an on-screen subtitle.

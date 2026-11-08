@@ -4,7 +4,7 @@ inclusion: always
 
 # Product: Summoning Circle
 
-Summoning Circle lets developers build AI apps that run entirely in the browser: no server, no API bill, no user data leaving the device. It is a Kiroween 2026 entry in the **Skeleton Crew** category.
+Summoning Circle lets developers build AI apps that run entirely in the browser: no server, no API bill, no user data leaving the device. It is a Kiroween 2026 entry in the **Frankenstein** category: five browser AI parts, each on a different web technology, stitched into one creature.
 
 ## The three parts
 
@@ -31,5 +31,4 @@ Summoning Circle lets developers build AI apps that run entirely in the browser:
 
 - All project code is written during the submission period (from Oct 30, 2026). Third-party libraries are allowed and listed in the README.
 - The `.kiro/` folder stays in the repo and is never gitignored.
-- The two apps live in separate folders.
 - Both apps must be deployable as free static sites that judges can open.

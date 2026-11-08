@@ -1,10 +1,12 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "@fontsource/im-fell-english/400.css";
-import "@fontsource/im-fell-english/400-italic.css";
-import "@fontsource/atkinson-hyperlegible/400.css";
-import "@fontsource/atkinson-hyperlegible/700.css";
-import "@fontsource/jetbrains-mono/400.css";
+import "@fontsource/big-shoulders-display/700";
+import "@fontsource/big-shoulders-display/900";
+import "@fontsource/newsreader/400";
+import "@fontsource/newsreader/400-italic";
+import "@fontsource/newsreader/600";
+import "@fontsource/ibm-plex-mono/400";
+import "@fontsource/ibm-plex-mono/500";
 import "./styles.css";
 import App from "./App";
 
