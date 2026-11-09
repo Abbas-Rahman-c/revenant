@@ -1,13 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Gate } from "./components/Gate";
 import { Anatomy } from "./components/Anatomy";
 import { Lab } from "./components/Lab";
 import { VitalSigns } from "./components/VitalSigns";
-import { setSoundEnabled } from "./sound";
+import { isSoundEnabled, setSoundEnabled } from "./sound";
 
 const REPO = "https://github.com/Abbas-Rahman-c/summoning-circle";
 
 function SoundToggle() {
-  const [on, setOn] = useState(false);
+  const [on, setOn] = useState(isSoundEnabled);
+  // stay in sync when the title screen turns sound on
+  useEffect(() => {
+    const sync = (e: Event) => setOn((e as CustomEvent<boolean>).detail);
+    window.addEventListener("lab:sound", sync);
+    return () => window.removeEventListener("lab:sound", sync);
+  }, []);
   return (
     <button
       type="button"
@@ -15,7 +22,6 @@ function SoundToggle() {
       aria-pressed={on}
       onClick={() => {
         setSoundEnabled(!on);
-        setOn(!on);
       }}
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -68,6 +74,9 @@ export default function App() {
       <a className="skip" href="#main">
         Skip to the lab
       </a>
+      {/* the whole page sits inside one 3D lab: this layer holds it, fixed behind everything */}
+      <div id="stage-root" className="stage-root" />
+      <Gate />
       <header className="top">
         <a className="wordmark" href="#main">
           Summoning Circle
@@ -87,6 +96,11 @@ export default function App() {
         <p className="end__card">The End?</p>
         <p className="end__credits">
           Made for Kiroween 2026 by Abbas Rahman and Sunaina Babar. Open source under the <a href={REPO}>MIT license</a>.
+        </p>
+        <p className="end__credits">
+          Anatomy: BodyParts3D, © The Database Center for Life Science,{" "}
+          <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Head scan: "Infinite, 3D Head Scan" by Lee
+          Perry-Smith, <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>.
         </p>
       </footer>
     </>

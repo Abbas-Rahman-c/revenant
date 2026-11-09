@@ -7,36 +7,32 @@ inclusion: always
 ```
 summoning-circle/
 ├── .kiro/              specs, steering, hooks (always committed)
-├── site/               the public landing site (Vite + React)
-├── circle/             the skeleton runtime, published as the `circle` package
+├── site/               the creature app (Vite + React): the lab, then talk mode
+├── circle/             the runtime, published as the `circle` package
 │   └── src/
 │       ├── index.ts    public API only: summon(), types, CircleError
 │       ├── sigil/      device probe (WebGPU, memory, storage) and tier choice
-│       ├── spirits/    model registry: one file per model kind
-│       ├── workers/    worker pool and the worker entry points
-│       ├── cache/      OPFS model cache
-│       └── ui/         optional summoning-circle progress component
+│       ├── parts/      one file per part: brain, eyes, ears, voice, memory
+│       ├── workers/    worker pool, message protocol and worker entry points
+│       └── cache/      cache detection for offline use
 ├── circle-mcp/         MCP server used by Kiro while building
 ├── power/              Kiro power package (steering + hooks + MCP config)
-├── apps/
-│   ├── possessed/      app 1: separate Vite app
-│   └── three-am/       app 2: separate Vite app
-├── benchmark/          hallucination benchmark prompts, runs and results
-└── planning/           concept and idea documents (not code)
+├── benchmark/          prompts and results for testing Kiro with and without the power
+└── planning/           plans and task docs (not code)
 ```
 
 ## Vocabulary (use these names in code and docs)
 
 | Term | Meaning |
 |---|---|
-| **summon** | load and return a ready-to-use model handle |
-| **spirit** | a model entry in the registry (kind, id, size, tier, loader) |
+| **part** | one of the five capabilities: `brain`, `eyes`, `ears`, `voice`, `memory` |
+| **summon** | load a part and return a ready-to-use handle |
 | **sigil** | the result of probing a device: what it can run |
 | **tier** | `tiny`, `small` or `full`: a size class picked from the sigil |
-| **banish** | unload a model and free its memory |
+| **banish** | unload a part and free its memory |
 
 ## Conventions
 
 - File names in kebab-case. Types and components in PascalCase.
-- One model kind per file in `circle/src/spirits/`.
-- Each app has its own `README.md` explaining what it uses from the Circle.
+- One part per file in `circle/src/parts/`.
+- `site/` imports only from `circle`'s public entry point, never its internal files.

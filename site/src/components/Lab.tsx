@@ -1,29 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Creature, Glyph } from "./Creature";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Glyph } from "./Creature";
+import type { CreatureSceneHandle } from "./CreatureBody";
 import { KnifeSwitch } from "./KnifeSwitch";
-import { Lightning, type LightningHandle, type Point } from "./Lightning";
-import { ORGANS, ORGAN_BY_ID, firstWords, type OrganId } from "../organs";
-import { playCharge, playClack, playHeartbeat, playStitch, playZap } from "../sound";
+import { ORGANS, firstWords, type OrganId } from "../organs";
+import { playCharge, playClack, playHeartbeat, playStitch, playZap, speak } from "../sound";
+
+// three.js is large, so the 3D creature loads in its own chunk
+const CreatureScene = lazy(() => import("./CreatureBody"));
 
 type Phase = "idle" | "charging" | "alive";
 const CHARGE_MS = 1800;
+/** Matches the CSS build sequence: bones, muscle, flesh, seams, clamps. */
+const BUILD_MS = 3900;
 
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-function TeslaCoil({ side, hot, terminalRef }: { side: "left" | "right"; hot: boolean; terminalRef: React.Ref<SVGCircleElement> }) {
-  return (
-    <svg className={`coil coil--${side}${hot ? " is-hot" : ""}`} viewBox="0 0 80 260" aria-hidden="true">
-      <ellipse cx="40" cy="30" rx="30" ry="12" className="coil__torus" />
-      <circle cx="40" cy="22" r="5" className="coil__tip" ref={terminalRef} />
-      <rect x="30" y="40" width="20" height="150" className="coil__core" />
-      {Array.from({ length: 34 }, (_, i) => (
-        <line key={i} x1="28" x2="52" y1={44 + i * 4.3} y2={46 + i * 4.3} className="coil__wind" />
-      ))}
-      <path d="M14 190h52l8 40H6z" className="coil__base" />
-      <rect x="4" y="230" width="72" height="12" rx="2" className="coil__foot" />
-    </svg>
-  );
-}
 
 function Heartbeat() {
   return (
@@ -42,13 +33,28 @@ export function Lab() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [loadStep, setLoadStep] = useState(0); // 0..1 across all attached parts
   const [flash, setFlash] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [stageRoot, setStageRoot] = useState<HTMLElement | null>(null);
+  useEffect(() => setStageRoot(document.getElementById("stage-root")), []);
+  const [intro] = useState(() => !reducedMotion());
+  const [built, setBuilt] = useState(!intro);
+  const [entered, setEntered] = useState(false);
+  useEffect(() => {
+    const go = () => setEntered(true);
+    window.addEventListener("lab:enter", go);
+    return () => window.removeEventListener("lab:enter", go);
+  }, []);
 
-  const creatureRef = useRef<SVGSVGElement>(null);
-  const leftTip = useRef<SVGCircleElement>(null);
-  const rightTip = useRef<SVGCircleElement>(null);
-  const lightning = useRef<LightningHandle>(null);
+  const creatureRef = useRef<CreatureSceneHandle>(null);
   const jarRefs = useRef<Partial<Record<OrganId, HTMLButtonElement | null>>>({});
   const floater = useRef<HTMLDivElement>(null);
+
+  // the body builds itself once, on first load
+  useEffect(() => {
+    if (built || !entered) return;
+    const t = window.setTimeout(() => setBuilt(true), BUILD_MS);
+    return () => window.clearTimeout(t);
+  }, [built, entered]);
 
   // heartbeat sound while alive
   useEffect(() => {
@@ -60,7 +66,7 @@ export function Lab() {
 
   const toggle = useCallback(
     async (id: OrganId) => {
-      if (phase !== "idle" || flying) return;
+      if (phase !== "idle" || flying || !built) return;
       if (parts.has(id)) {
         setParts((p) => {
           const n = new Set(p);
@@ -70,14 +76,11 @@ export function Lab() {
         return;
       }
       const jar = jarRefs.current[id];
-      const svg = creatureRef.current;
       const fl = floater.current;
-      if (jar && svg && fl && !reducedMotion()) {
+      const to = creatureRef.current?.socket(id) ?? null;
+      if (jar && to && fl && !reducedMotion()) {
         // fly the part from its jar to its socket along a curved path
         const from = jar.querySelector(".jar__glyph")!.getBoundingClientRect();
-        const box = svg.getBoundingClientRect();
-        const s = ORGAN_BY_ID[id].socket;
-        const to = { x: box.left + (s.x / 320) * box.width, y: box.top + (s.y / 520) * box.height };
         const fx = from.left + from.width / 2;
         const fy = from.top + from.height / 2;
         setFlying(id);
@@ -101,7 +104,7 @@ export function Lab() {
       window.setTimeout(playStitch, 160);
       window.setTimeout(playStitch, 320);
     },
-    [phase, parts, flying],
+    [phase, parts, flying, built],
   );
 
   const reanimate = useCallback(async () => {
@@ -128,41 +131,31 @@ export function Lab() {
     });
     stop();
 
-    const terminals = creatureRef.current ? Array.from(creatureRef.current.querySelectorAll("[data-terminal]")) : [];
-    const centre = (el: Element | null): Point | null => {
-      if (!el) return null;
-      const r = el.getBoundingClientRect();
-      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-    };
-    const l = centre(leftTip.current);
-    const r = centre(rightTip.current);
-    const tl = centre(terminals[0] ?? null);
-    const tr = centre(terminals[1] ?? null);
-    if (!reduce && l && r && tl && tr && lightning.current) {
-      playZap();
+    playZap();
+    if (!reduce && creatureRef.current) {
       setFlash(true);
       window.setTimeout(() => setFlash(false), 180);
-      await lightning.current.strike([
-        [l, tl],
-        [r, tr],
-      ]);
-    } else {
-      playZap();
+      await creatureRef.current.strike();
     }
     setPhase("alive");
+    // its first words, once it has a brain to think them and a voice to say them
+    if (parts.has("brain") && parts.has("voice")) {
+      window.setTimeout(() => speak(firstWords(parts), () => setSpeaking(true), () => setSpeaking(false)), 700);
+    }
   }, [phase, parts]);
 
   function unplug() {
+    window.speechSynthesis?.cancel();
+    setSpeaking(false);
     setPhase("idle");
     setLoadStep(0);
   }
 
   const attached = ORGANS.filter((o) => parts.has(o.id));
   const totalMB = attached.reduce((s, o) => s + o.approxMB, 0);
-  const hot = phase !== "idle";
 
   return (
-    <section className={`lab lab--${phase}`} aria-labelledby="lab-h">
+    <section className={`lab lab--${phase}${built ? "" : " is-building"}${intro ? " has-intro" : ""}${entered ? " is-entered" : ""}`} aria-labelledby="lab-h">
       <div className="lab__copy">
         <h1 id="lab-h">Stitch a mind into your browser.</h1>
         <p className="lede">
@@ -176,7 +169,7 @@ export function Lab() {
         </ol>
 
         <div className="lab__switch">
-          <KnifeSwitch disabled={parts.size === 0} closed={phase !== "idle"} onThrow={reanimate} />
+          <KnifeSwitch disabled={parts.size === 0 || !built} closed={phase !== "idle"} onThrow={reanimate} />
           <div className="lab__switch-text" aria-live="polite">
             {phase === "idle" && (
               <>
@@ -185,7 +178,11 @@ export function Lab() {
                   {parts.size > 0 && <span className="readout__dim"> (about {totalMB} MB)</span>}
                 </p>
                 <p className="hint">
-                  {parts.size === 0 ? "The switch is dead until a part is stitched on." : "Drag the handle down, or press it."}
+                  {!built
+                    ? "The body is still being put together…"
+                    : parts.size === 0
+                      ? "The switch is dead until a part is stitched on."
+                      : "Drag the handle down, or press it."}
                 </p>
               </>
             )}
@@ -207,13 +204,31 @@ export function Lab() {
       </div>
 
       <div className="lab__stage">
-        <TeslaCoil side="left" hot={hot} terminalRef={leftTip} />
-        <div className="lab__slab">
-          <Creature ref={creatureRef} parts={parts} alive={phase === "alive"} charging={phase === "charging"} />
-        </div>
-        <TeslaCoil side="right" hot={hot} terminalRef={rightTip} />
+        {stageRoot &&
+          createPortal(
+            <Suspense fallback={null}>
+              <CreatureScene
+                ref={creatureRef}
+                parts={parts}
+                alive={phase === "alive"}
+                charging={phase === "charging"}
+                intro={intro}
+                speaking={speaking}
+                entered={entered}
+              />
+            </Suspense>,
+            stageRoot,
+          )}
 
         <div className="lab__monitor" aria-live="polite">
+          {!built && entered && (
+            <p className="assembly" aria-label="Assembling the body">
+              <span>Bones</span>
+              <span>Muscle</span>
+              <span>Flesh</span>
+              <span>Sutures</span>
+            </p>
+          )}
           {phase === "charging" &&
             attached.map((o, i) => {
               const share = 1 / attached.length;
@@ -251,7 +266,7 @@ export function Lab() {
               }}
               className={`jar${on ? " is-empty" : ""}`}
               aria-pressed={parts.has(o.id)}
-              disabled={phase !== "idle"}
+              disabled={phase !== "idle" || !built}
               onClick={() => toggle(o.id)}
             >
               <svg className="jar__svg" viewBox="0 0 90 96" aria-hidden="true">
@@ -280,7 +295,6 @@ export function Lab() {
         )}
       </div>
       <div className={`flash${flash ? " is-on" : ""}`} aria-hidden="true" />
-      <Lightning ref={lightning} />
     </section>
   );
 }

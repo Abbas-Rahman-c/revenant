@@ -1,3 +1,5 @@
+> **Superseded (8 Nov 2026).** We switched to the Frankenstein category with one creature app. The current plan is [BACKEND_PLAN.md](BACKEND_PLAN.md). This file is kept for history.
+
 # Summoning Circle
 
 **Kiroween 2026 · Skeleton Crew · Abbas Rahman & Sunaina Babar**

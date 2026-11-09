@@ -1,3 +1,5 @@
+> **Superseded (8 Nov 2026).** We switched to the Frankenstein category with one creature app. The current plan is [BACKEND_PLAN.md](BACKEND_PLAN.md). This file is kept for history.
+
 # Kiro kickoff guide
 
 How to start building Summoning Circle in the Kiro IDE. Paste the prompts below into Kiro **one at a time**, in order. Each prompt is a starting point; review what Kiro produces before moving on.

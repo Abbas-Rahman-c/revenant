@@ -1,36 +1,54 @@
 # Summoning Circle
 
-> Summon AI that lives entirely in the browser. No server, no API bill, no data leaving the device.
+> Stitch a mind into your browser.
 
-A **Kiroween 2026** entry in the **Skeleton Crew** category.
+A **Kiroween 2026** entry in the **Frankenstein** category.
 
-Summoning Circle has three parts:
+Five AI models, each built on a different web technology, sewn into one creature that lives entirely on your device:
 
-- **The Circle** (`circle/`): a small runtime that loads and runs language, speech, voice and vision models locally on WebGPU, with one call: `summon("llm")`.
-- **The Ritual** (`circle-mcp/`, `power/`): an MCP server and a Kiro power that teach Kiro to build local AI apps without inventing APIs.
-- **Two apps** built only on the Circle:
-  - [`apps/possessed`](apps/possessed): point your camera at any object and it comes alive and talks back.
-  - [`apps/three-am`](apps/three-am): a private, offline voice dream journal.
+| Part | What it does | Built on |
+|---|---|---|
+| Brain | thinks and answers | a small language model on WebGPU |
+| Eyes | sees what the camera sees | object detection with MediaPipe and WebAssembly |
+| Ears | hears and writes down speech | Whisper speech-to-text in WebAssembly |
+| Voice | speaks out loud | text-to-speech played through Web Audio |
+| Memory | remembers you between visits | text embeddings stored in the browser |
 
-> 🚧 Under construction. Built during the Kiroween 2026 submission period (Oct 30 – Dec 4, 2026).
+No server, no API bill. Model files download once; your camera, voice and words never leave the tab.
+
+> 🚧 Under construction. Built during the Kiroween 2026 submission period (Oct 30 – Dec 4, 2026). The lab in `site/` works today with simulated loading; the real models are being wired up now.
 
 ## Repository layout
 
 | Folder | What lives there |
 |---|---|
 | `.kiro/` | Kiro specs, steering docs and hooks used to build this project |
-| `circle/` | The skeleton runtime (the template) |
+| `site/` | The creature app: the lab, then talk mode |
+| `circle/` | The runtime that loads and runs each part in the browser |
 | `circle-mcp/` | MCP server Kiro uses while building |
 | `power/` | The Kiro power package |
-| `apps/possessed/` | App 1 |
-| `apps/three-am/` | App 2 |
-| `benchmark/` | The hallucination benchmark: Kiro with and without the power |
-| `planning/` | Concept and idea documents |
+| `benchmark/` | Testing Kiro with and without the power |
+| `planning/` | Plans and task docs ([backend plan](planning/BACKEND_PLAN.md)) |
+
+## Run it locally
+
+```bash
+npm install
+npm run dev
+```
+
+Then open http://localhost:5173.
 
 ## How Kiro was used
 
 See [`.kiro/`](.kiro) and, at submission time, the Kiro write-up in this README.
 
+## Credits
+
+- **Head:** "Infinite, 3D Head Scan" by Lee Perry-Smith, based on a work at [triplegangers.com](https://www.triplegangers.com), licensed [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Files from the [three.js examples](https://github.com/mrdoob/three.js/tree/dev/examples/models/gltf/LeePerrySmith); license text in `site/public/models/head-scan/`.
+- **Body anatomy (skin, skeleton, muscles, brain, heart):** BodyParts3D, © The Database Center for Life Science, licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Meshes reduced and combined for the web.
+- **3D rendering:** [three.js](https://threejs.org) (MIT).
+
 ## License
 
-[MIT](LICENSE)
+Code: [MIT](LICENSE). Third-party assets keep their own licenses (see Credits).
