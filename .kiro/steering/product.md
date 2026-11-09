@@ -2,9 +2,9 @@
 inclusion: always
 ---
 
-# Product: Summoning Circle
+# Product: Revenant
 
-Summoning Circle lets developers build AI apps that run entirely in the browser: no server, no API bill, no user data leaving the device. It is a Kiroween 2026 entry in the **Frankenstein** category: five browser AI parts, each on a different web technology, stitched into one creature.
+Revenant lets developers build AI apps that run entirely in the browser: no server, no API bill, no user data leaving the device. It is a Kiroween 2026 entry in the **Frankenstein** category: five browser AI parts, each on a different web technology, stitched into one creature.
 
 ## The three layers
 

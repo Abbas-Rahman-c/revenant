@@ -1,4 +1,4 @@
-"""Renders the Devpost thumbnail (3:2) for Summoning Circle.
+"""Renders the Devpost thumbnail (3:2) for Revenant.
 
 Usage: python planning/make_thumbnail.py planning/thumbnail.png
 """
@@ -118,15 +118,14 @@ base.alpha_composite(lines)
 
 # type
 d = ImageDraw.Draw(base)
-title = ImageFont.truetype(FONTS + "GARABD.TTF", 118 * SS)
+title = ImageFont.truetype(FONTS + "GARABD.TTF", 150 * SS)
 tag = ImageFont.truetype(FONTS + "GARAIT.TTF", 50 * SS)
 small = ImageFont.truetype(FONTS + "GARA.TTF", 34 * SS)
 x0 = 90 * SS
-d.text((x0, 330 * SS), "Summoning", font=title, fill=BONE)
-d.text((x0, 455 * SS), "Circle", font=title, fill=BONE)
-d.text((x0, 615 * SS), "AI that lives in your browser.", font=tag, fill=EMBER)
-d.text((x0, 690 * SS), "No server. No API bill.", font=small, fill=DUST)
-d.text((x0, 735 * SS), "Nothing leaves your device.", font=small, fill=DUST)
+d.text((x0, 380 * SS), "Revenant", font=title, fill=BONE)
+d.text((x0, 560 * SS), "It lives in your browser.", font=tag, fill=EMBER)
+d.text((x0, 640 * SS), "No server. No API bill.", font=small, fill=DUST)
+d.text((x0, 685 * SS), "Nothing leaves your device.", font=small, fill=DUST)
 
 img = base.convert("RGB").resize((W // SS, H // SS), Image.LANCZOS)
 img.save(OUT, optimize=True)

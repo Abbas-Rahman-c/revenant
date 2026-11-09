@@ -5,7 +5,7 @@ inclusion: always
 # Project structure
 
 ```
-summoning-circle/
+revenant/
 ├── .kiro/              specs, steering, hooks (always committed)
 ├── site/               the creature app (Vite + React): the lab, then talk mode
 ├── circle/             the runtime, published as the `circle` package

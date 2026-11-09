@@ -1,5 +1,5 @@
 {
-  "name": "summoning-circle",
+  "name": "revenant",
   "private": true,
   "workspaces": ["site"],
   "scripts": {

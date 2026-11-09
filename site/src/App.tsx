@@ -5,7 +5,7 @@ import { Lab } from "./components/Lab";
 import { VitalSigns } from "./components/VitalSigns";
 import { isSoundEnabled, setSoundEnabled } from "./sound";
 
-const REPO = "https://github.com/Abbas-Rahman-c/summoning-circle";
+const REPO = "https://github.com/Abbas-Rahman-c/revenant";
 
 function SoundToggle() {
   const [on, setOn] = useState(isSoundEnabled);
@@ -79,7 +79,7 @@ export default function App() {
       <Gate />
       <header className="top">
         <a className="wordmark" href="#main">
-          Summoning Circle
+          Revenant
         </a>
         <nav className="top__nav" aria-label="Site">
           <SoundToggle />

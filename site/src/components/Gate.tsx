@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { setSoundEnabled } from "../sound";
 
-const TITLE = "Summoning Circle";
+const TITLE = "Revenant";
 
 /**
  * The title screen. Browsers only allow sound after a click, so entering is also how the lab's

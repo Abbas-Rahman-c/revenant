@@ -1,4 +1,4 @@
-# Summoning Circle
+# Revenant
 
 > Stitch a mind into your browser.
 

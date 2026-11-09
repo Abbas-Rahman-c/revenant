@@ -31,7 +31,7 @@ Category: **Frankenstein**, "stitch together a chimera of technologies into one 
 ## Layout
 ```
 ┌──────────────────────────────────────────────────────────┐
-│ Summoning Circle                         sound  GitHub    │
+│ Revenant                         sound  GitHub    │
 │                                                           │
 │  Stitch a mind      ┌─coil┐   creature    ┌coil─┐  jars:  │
 │  into your browser. │     │   on slab     │     │  eyes   │

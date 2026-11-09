@@ -1,3 +1,3 @@
 # Kiro power
 
-Packages the steering docs, hooks and circle-mcp so anyone can install Summoning Circle expertise into Kiro.
+Packages the steering docs, hooks and circle-mcp so anyone can install Revenant expertise into Kiro.
