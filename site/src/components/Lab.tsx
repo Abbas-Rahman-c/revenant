@@ -7,7 +7,7 @@ import { ORGANS, firstWords, type OrganId } from "../organs";
 import { playCharge, playClack, playHeartbeat, playStitch, playZap, speak } from "../sound";
 
 // three.js is large, so the 3D creature loads in its own chunk
-const CreatureScene = lazy(() => import("./CreatureBody"));
+const CreatureBody = lazy(() => import("./CreatureBody"));
 
 type Phase = "idle" | "charging" | "alive";
 const CHARGE_MS = 1800;
@@ -207,7 +207,7 @@ export function Lab() {
         {stageRoot &&
           createPortal(
             <Suspense fallback={null}>
-              <CreatureScene
+              <CreatureBody
                 ref={creatureRef}
                 parts={parts}
                 alive={phase === "alive"}

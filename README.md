@@ -45,7 +45,6 @@ See [`.kiro/`](.kiro) and, at submission time, the Kiro write-up in this README.
 
 ## Credits
 
-- **Head:** "Infinite, 3D Head Scan" by Lee Perry-Smith, based on a work at [triplegangers.com](https://www.triplegangers.com), licensed [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Files from the [three.js examples](https://github.com/mrdoob/three.js/tree/dev/examples/models/gltf/LeePerrySmith); license text in `site/public/models/head-scan/`.
 - **Body anatomy (skin, skeleton, muscles, brain, heart):** BodyParts3D, © The Database Center for Life Science, licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Meshes reduced and combined for the web.
 - **3D rendering:** [three.js](https://threejs.org) (MIT).
 

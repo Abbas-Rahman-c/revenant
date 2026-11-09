@@ -99,8 +99,7 @@ export default function App() {
         </p>
         <p className="end__credits">
           Anatomy: BodyParts3D, © The Database Center for Life Science,{" "}
-          <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Head scan: "Infinite, 3D Head Scan" by Lee
-          Perry-Smith, <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>.
+          <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
         </p>
       </footer>
     </>
