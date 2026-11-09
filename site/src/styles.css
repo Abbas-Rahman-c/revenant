@@ -2005,3 +2005,27 @@ html.is-gated {
     border-right: 0;
   }
 }
+
+/* ───────── lighter page effects on weaker machines (set by the 3D scene's quality tier) ───────── */
+
+html[data-quality="0"] .panel,
+html[data-quality="0"] .vitals .section-head,
+html[data-quality="0"] .how__rows,
+html[data-quality="0"] .lab__jars,
+html[data-quality="1"] .panel,
+html[data-quality="1"] .vitals .section-head,
+html[data-quality="1"] .how__rows,
+html[data-quality="1"] .lab__jars {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: rgba(24, 23, 27, 0.86);
+}
+
+html[data-quality="0"] body::before {
+  display: none;
+}
+
+/* smooth, momentum-like scrolling between camera shots */
+html {
+  scroll-behavior: smooth;
+}

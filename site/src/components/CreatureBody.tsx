@@ -23,6 +23,8 @@ export type CreatureSceneHandle = {
 type Props = { parts: Set<OrganId>; alive: boolean; charging: boolean; intro: boolean; speaking: boolean; entered: boolean };
 
 const BODY_URL = "/models/creature/creature-body.glb";
+/** About 30% of the triangles, for weaker machines. */
+const BODY_LITE_URL = "/models/creature/creature-body-lite.glb";
 const VEINS_URL = "/models/creature/creature-veins.bin";
 
 const BG = new THREE.Color("#2b2a2e");
@@ -146,7 +148,7 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
 
     /* ───── renderer and post ───── */
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.localClippingEnabled = true;
@@ -240,14 +242,18 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
     makeCoil(-2.1);
     makeCoil(2.1);
 
+    /** 1 on capable machines; 0 swaps the costliest per-pixel effects for cheap versions. */
+    const detail = { value: 1 };
+
     /* ───── the room around it: stone walls, a storm window, dust in the air, an instrument wall ───── */
     const stoneWall = new THREE.MeshStandardMaterial({ color: "#2f2d33", roughness: 0.95, side: THREE.BackSide });
     stoneWall.onBeforeCompile = (shader) => {
+      shader.uniforms.uDetail = detail;
       shader.vertexShader = shader.vertexShader
         .replace("#include <common>", "#include <common>\nvarying vec3 vW;")
         .replace("#include <worldpos_vertex>", "#include <worldpos_vertex>\nvW = (modelMatrix * vec4(transformed, 1.0)).xyz;");
       shader.fragmentShader = shader.fragmentShader
-        .replace("#include <common>", `#include <common>\nvarying vec3 vW;\n${NOISE}`)
+        .replace("#include <common>", `#include <common>\nvarying vec3 vW; uniform float uDetail;\n${NOISE}`)
         .replace(
           "#include <color_fragment>",
           `#include <color_fragment>
@@ -256,7 +262,8 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
           b.x += step(1.0, mod(floor(b.y), 2.0)) * 0.5;
           vec2 f = fract(b);
           float mortar = smoothstep(0.0, 0.04, f.x) * smoothstep(1.0, 0.96, f.x) * smoothstep(0.0, 0.06, f.y) * smoothstep(1.0, 0.94, f.y);
-          diffuseColor.rgb *= mix(0.45, 1.0, mortar) * (0.75 + 0.5 * fbm3(vW * 1.7));`,
+          float grain = uDetail > 0.5 ? fbm3(vW * 1.7) : vnoise(vW * 1.7);
+          diffuseColor.rgb *= mix(0.45, 1.0, mortar) * (0.75 + 0.5 * grain);`,
         );
     };
     const room = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 12, 72, 1, true), stoneWall);
@@ -331,10 +338,22 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
     }
     const dustGeo = new THREE.BufferGeometry();
     dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPos, 3));
-    const dust = new THREE.Points(
-      dustGeo,
-      new THREE.PointsMaterial({ color: "#cfd7e8", size: 0.025, transparent: true, opacity: 0.55, depthWrite: false, sizeAttenuation: true }),
-    );
+    const dustTime = { value: 0 };
+    const dustMat = new THREE.PointsMaterial({ color: "#cfd7e8", size: 0.025, transparent: true, opacity: 0.55, depthWrite: false, sizeAttenuation: true });
+    // the drift runs in the vertex shader, so the CPU never touches the points after setup
+    dustMat.onBeforeCompile = (shader) => {
+      shader.uniforms.uTime = dustTime;
+      shader.vertexShader = shader.vertexShader
+        .replace("#include <common>", "#include <common>\nuniform float uTime;")
+        .replace(
+          "#include <begin_vertex>",
+          `vec3 transformed = position;
+          transformed.y = ${FLOOR.toFixed(2)} + mod(position.y - (${FLOOR.toFixed(2)}) + uTime * 0.03, 6.5);
+          transformed.x += sin(uTime * 0.3 + position.z * 3.1) * 0.15;
+          transformed.z += cos(uTime * 0.23 + position.x * 2.7) * 0.12;`,
+        );
+    };
+    const dust = new THREE.Points(dustGeo, dustMat);
     scene.add(dust);
 
     // the instrument wall: brass gauges that read the visitor's real machine
@@ -436,7 +455,7 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
     }
 
     // translucent, stitched skin: see-through face-on, solid at the edges, sewn from patches
-    const skinUniforms = { uSeams: { value: playIntro ? 0 : 1 } };
+    const skinUniforms = { uSeams: { value: playIntro ? 0 : 1 }, uDetail: detail };
     const skinMat = withMotion(
       new THREE.MeshPhysicalMaterial({
         color: "#cbc3ae", // the novel's yellowed skin, gone cold
@@ -454,7 +473,7 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
           .replace("#include <common>", "#include <common>\nvarying vec3 vObj;")
           .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position;");
         shader.fragmentShader = shader.fragmentShader
-          .replace("#include <common>", `#include <common>\nuniform float uSeams; varying vec3 vObj;\n${NOISE}`)
+          .replace("#include <common>", `#include <common>\nuniform float uSeams; uniform float uDetail; varying vec3 vObj;\n${NOISE}`)
           .replace(
             "#include <dithering_fragment>",
             `#include <dithering_fragment>
@@ -464,13 +483,14 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
             vec3 g = vObj * 2.3;
             vec3 ip = floor(g); vec3 fp = fract(g);
             float d1 = 9.0; float d2 = 9.0;
-            for (int x = -1; x <= 1; x++) for (int y = -1; y <= 1; y++) for (int z = -1; z <= 1; z++) {
+            // the 27-cell search is the costliest thing on screen; weak machines get plain skin instead
+            if (uDetail > 0.5) for (int x = -1; x <= 1; x++) for (int y = -1; y <= 1; y++) for (int z = -1; z <= 1; z++) {
               vec3 o = vec3(float(x), float(y), float(z));
               vec3 r = o + vec3(hash3(ip + o), hash3(ip + o + 13.1), hash3(ip + o + 27.7)) - fp;
               float d = dot(r, r);
               if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) { d2 = d; }
             }
-            float edge = sqrt(d2) - sqrt(d1);
+            float edge = uDetail > 0.5 ? sqrt(d2) - sqrt(d1) : 1.0;
             float seam = (1.0 - smoothstep(0.035, 0.075, edge)) * uSeams;
             float stitch = (1.0 - smoothstep(0.0, 0.12, edge)) * uSeams * step(0.62, fract((vObj.x + vObj.y + vObj.z) * 70.0));
             float tone = fbm3(vObj * 2.0 + floor(g)) * 0.18; // each patch from a different donor
@@ -724,10 +744,14 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
         .catch(() => {});
       start = performance.now();
     }
-    loader.load(BODY_URL, (g) => !disposed && setup(g));
 
+    const cableKey = new Map<Electrode, string>();
     function updateCable(e: Electrode, k: number) {
-      // a sagging cable from the coil tip to the clamp; k < 1 while it is reeling in after detaching
+      // a sagging cable from the coil tip to the clamp; k < 1 while it is reeling in after detaching.
+      // Rebuilding a tube is costly, so only do it when the cable's shape really changed.
+      const key = `${k.toFixed(3)}|${e.clamp.position.x.toFixed(3)}|${e.clamp.position.y.toFixed(3)}`;
+      if (cableKey.get(e) === key) return;
+      cableKey.set(e, key);
       const a = e.tip.getWorldPosition(new THREE.Vector3());
       const b = e.clamp.getWorldPosition(new THREE.Vector3());
       const end = a.clone().lerp(b, k);
@@ -787,6 +811,55 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
     const ro = new ResizeObserver(fit);
     ro.observe(el);
     fit();
+
+    /* ───── adaptive quality: start from a guess about the hardware, then follow the real frame rate ───── */
+    const gl = renderer.getContext();
+    const dbg = gl.getExtension("WEBGL_debug_renderer_info");
+    const gpuName = String(dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)).toLowerCase();
+    const nav = navigator as Navigator & { deviceMemory?: number };
+    const mobile = /android|iphone|ipad|mobile/i.test(navigator.userAgent);
+    let tier = 2;
+    if (/swiftshader|llvmpipe|softpipe|software|basic render/.test(gpuName)) tier = 0;
+    else if (mobile || (nav.deviceMemory ?? 8) <= 4 || (navigator.hardwareConcurrency ?? 8) <= 4) tier = 1;
+    else if (/intel|uhd|iris|mali|adreno|powervr/.test(gpuName)) tier = 2;
+    else if (/nvidia|geforce|rtx|gtx|radeon|rx |apple m/.test(gpuName)) tier = 3;
+    const maxTier = Math.min(3, tier + 1);
+    let useComposer = true;
+
+    function applyTier(next: number) {
+      tier = next;
+      const dpr = [0.5, 0.85, 1.5, 2][tier];
+      detail.value = tier >= 2 ? 1 : 0;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dpr));
+      composer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dpr));
+      useComposer = tier >= 1;
+      bloom.enabled = tier >= 1;
+      const shadows = tier >= 2;
+      if (renderer.shadowMap.enabled !== shadows) {
+        renderer.shadowMap.enabled = shadows;
+        key.castShadow = shadows;
+        // materials compile differently with and without shadows
+        scene.traverse((o) => {
+          const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+          (Array.isArray(m) ? m : m ? [m] : []).forEach((x) => (x.needsUpdate = true));
+        });
+      }
+      const size = tier >= 3 ? 2048 : 1024;
+      if (key.shadow.mapSize.x !== size) {
+        key.shadow.mapSize.set(size, size);
+        key.shadow.map?.dispose();
+        key.shadow.map = null;
+      }
+      dust.visible = tier >= 1;
+      document.documentElement.dataset.quality = String(tier);
+      fit();
+    }
+    applyTier(tier);
+    loader.load(tier <= 1 ? BODY_LITE_URL : BODY_URL, (g) => !disposed && setup(g));
+    let fpsFrames = 0;
+    let fpsSince = performance.now();
+    let lastChange = performance.now();
+    let lastDrop = 0;
     const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting));
     io.observe(el);
     const pointer = new THREE.Vector2();
@@ -837,6 +910,18 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
     const sectionWeight: Record<string, number> = {};
     const camPos = new THREE.Vector3(0, 0.25, 10.5);
     const camLook = new THREE.Vector3(0, -0.3, 0);
+    // allocated once: the frame loop creates no garbage, so there are no collector hiccups
+    const SHOT_KEYS = [".lab", ".anatomy", ".vitals", ".how", ".end"];
+    const shotPos = SHOT_KEYS.map(() => new THREE.Vector3());
+    const shotTarget = SHOT_KEYS.map(() => new THREE.Vector3());
+    const sectionEls = new Map<string, Element | null>();
+    const want = new THREE.Vector3();
+    const wantT = new THREE.Vector3();
+    const off = new THREE.Vector3();
+    const UP = new THREE.Vector3(0, 1, 0);
+    const tmp = new THREE.Vector3();
+    let pinEls: HTMLElement[] = [];
+    let pinsShown = true;
     let flood = 0;
     let nextBlink = 0;
     let open = 0;
@@ -862,33 +947,38 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
       cam.closeUp += ((a ? 1 : 0) - cam.closeUp) * Math.min(dt * 0.6, 1);
       const narrow = camera.aspect < 0.8;
       const sx = narrow ? 0 : -1.5;
-      const labPos = new THREE.Vector3(sx, 0.25, narrow ? 13.5 : 10.5).lerp(new THREE.Vector3(sx * 0.4, bodyTop - 0.3, narrow ? 6.5 : 5), cam.closeUp);
-      const labTarget = new THREE.Vector3(sx, -0.3, 0).lerp(new THREE.Vector3(sx * 0.4, bodyTop - 0.55, 0), cam.closeUp);
-      const shots: Array<{ el: string; pos: THREE.Vector3; target: THREE.Vector3 }> = [
-        { el: ".lab", pos: labPos, target: labTarget },
-        { el: ".anatomy", pos: new THREE.Vector3(narrow ? 2.6 : 3.4, 0.9, narrow ? 6.2 : 4.6), target: new THREE.Vector3(0, 0.35, 0) },
-        { el: ".vitals", pos: new THREE.Vector3(-3.4, 0.5, 3.2), target: new THREE.Vector3(-6.7, 0.25, 1.2) },
-        { el: ".how", pos: new THREE.Vector3(5, 4.6, narrow ? 15 : 11), target: new THREE.Vector3(0, -0.6, 0) },
-        { el: ".end", pos: new THREE.Vector3(0, 1.2, narrow ? 22 : 18), target: new THREE.Vector3(0, 0.1, 0) },
-      ];
+      const cu = cam.closeUp;
+      const zFar = narrow ? 13.5 : 10.5;
+      const zNear = narrow ? 6.5 : 5;
+      shotPos[0].set(sx + (sx * 0.4 - sx) * cu, 0.25 + (bodyTop - 0.55) * cu, zFar + (zNear - zFar) * cu);
+      shotTarget[0].set(sx + (sx * 0.4 - sx) * cu, -0.3 + (bodyTop - 0.25) * cu, 0);
+      shotPos[1].set(narrow ? 2.6 : 3.4, 0.9, narrow ? 6.2 : 4.6);
+      shotTarget[1].set(0, 0.35, 0);
+      shotPos[2].set(-3.4, 0.5, 3.2);
+      shotTarget[2].set(-6.7, 0.25, 1.2);
+      shotPos[3].set(5, 4.6, narrow ? 15 : 11);
+      shotTarget[3].set(0, -0.6, 0);
+      shotPos[4].set(0, 1.2, narrow ? 22 : 18);
+      shotTarget[4].set(0, 0.1, 0);
       const vh = window.innerHeight;
       let wsum = 0;
-      const want = new THREE.Vector3();
-      const wantT = new THREE.Vector3();
-      for (const s of shots) {
-        const node = document.querySelector(s.el);
-        if (!node) continue;
+      want.set(0, 0, 0);
+      wantT.set(0, 0, 0);
+      SHOT_KEYS.forEach((sel, i) => {
+        if (!sectionEls.get(sel)) sectionEls.set(sel, document.querySelector(sel));
+        const node = sectionEls.get(sel);
+        if (!node) return;
         const r = node.getBoundingClientRect();
         const d = Math.abs(r.top + Math.min(r.height, vh) / 2 - vh / 2) / vh;
         const w = Math.pow(Math.max(0, 1 - d * 1.5), 2);
-        sectionWeight[s.el] = w;
-        want.addScaledVector(s.pos, w);
-        wantT.addScaledVector(s.target, w);
+        sectionWeight[sel] = w;
+        want.addScaledVector(shotPos[i], w);
+        wantT.addScaledVector(shotTarget[i], w);
         wsum += w;
-      }
+      });
       if (wsum < 0.001) {
-        want.copy(labPos);
-        wantT.copy(labTarget);
+        want.copy(shotPos[0]);
+        wantT.copy(shotTarget[0]);
       } else {
         want.multiplyScalar(1 / wsum);
         wantT.multiplyScalar(1 / wsum);
@@ -904,8 +994,8 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
       }
       // drag orbits around the current target; a slow drift keeps the room breathing
       const yawOff = orbit.yaw + (reduce ? 0 : Math.sin(time * 0.12) * 0.05);
-      const off = camPos.clone().sub(camLook);
-      off.applyAxisAngle(new THREE.Vector3(0, 1, 0), yawOff);
+      off.copy(camPos).sub(camLook);
+      off.applyAxisAngle(UP, yawOff);
       off.y += orbit.pitch * off.length() * 0.6;
       camera.position.copy(camLook).add(off);
       camera.lookAt(camLook);
@@ -924,16 +1014,7 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
       }
       stormUniforms.uFlash.value *= Math.exp(-dt * 5);
       windowLight.intensity = stormUniforms.uFlash.value * 1.6;
-      if (!reduce) {
-        const dp = dustGeo.attributes.position as THREE.BufferAttribute;
-        for (let i = 0; i < dustCount; i++) {
-          let y = dp.getY(i) + dt * 0.03;
-          if (y > FLOOR + 6.5) y = FLOOR;
-          dp.setY(i, y);
-          dp.setX(i, dp.getX(i) + Math.sin(time * 0.3 + i) * dt * 0.02);
-        }
-        dp.needsUpdate = true;
-      }
+      if (!reduce) dustTime.value = time;
       const showGauges = sectionWeight[".vitals"] ?? 0;
       needles.forEach((n) => {
         const goal = showGauges > 0.3 ? n.target : (120 * Math.PI) / 180;
@@ -946,15 +1027,20 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
 
       // anatomy labels follow their organs on screen
       const anatomyW = sectionWeight[".anatomy"] ?? 0;
-      document.querySelectorAll<HTMLElement>("[data-anchor]").forEach((label) => {
-        const pt = anchors[label.dataset.anchor as string];
-        if (!pt) return;
-        const v = pt.clone().project(camera);
-        const x = ((v.x + 1) / 2) * window.innerWidth;
-        const y = ((1 - v.y) / 2) * window.innerHeight;
-        label.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
-        label.style.opacity = String(Math.max(0, (anatomyW - 0.35) / 0.65));
-      });
+      const pinOpacity = Math.max(0, (anatomyW - 0.35) / 0.65);
+      if (!pinEls.length) pinEls = Array.from(document.querySelectorAll<HTMLElement>("[data-anchor]"));
+      if (pinOpacity > 0 || pinsShown) {
+        pinsShown = pinOpacity > 0;
+        for (const label of pinEls) {
+          const pt = anchors[label.dataset.anchor as string];
+          if (!pt) continue;
+          tmp.copy(pt).project(camera);
+          const x = ((tmp.x + 1) / 2) * window.innerWidth;
+          const y = ((1 - tmp.y) / 2) * window.innerHeight;
+          label.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
+          label.style.opacity = pinOpacity.toFixed(3);
+        }
+      }
 
       if (skin) {
         // the build: bones, then muscle, then skin, sweeping upward; then the seams are sewn
@@ -976,7 +1062,8 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
           if (e.detach) {
             // the clamp pops off the skin and falls away
             const u = (now - e.detach) / 1000;
-            e.clamp.position.copy(e.anchor).addScaledVector(e.normal, u * 0.6).add(new THREE.Vector3(0, -2.4 * u * u, 0));
+            e.clamp.position.copy(e.anchor).addScaledVector(e.normal, u * 0.6);
+            e.clamp.position.y -= 2.4 * u * u;
             e.clamp.visible = u < 0.9;
           } else {
             e.clamp.position.copy(e.anchor);
@@ -1058,7 +1145,23 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
         }
       }
 
-      composer.render();
+      if (useComposer) composer.render();
+      else renderer.render(scene, camera);
+
+      // every two seconds: drop a tier if it is struggling, climb back slowly if there is headroom
+      fpsFrames++;
+      if (now - fpsSince > 2000) {
+        const fps = (fpsFrames * 1000) / (now - fpsSince);
+        fpsFrames = 0;
+        fpsSince = now;
+        if (fps < 42 && tier > 0 && now - lastChange > 2500) {
+          applyTier(tier - 1);
+          lastChange = lastDrop = now;
+        } else if (fps > 58 && tier < maxTier && now - lastChange > 8000 && now - lastDrop > 25000) {
+          applyTier(tier + 1);
+          lastChange = now;
+        }
+      }
     };
     frame();
 
