@@ -39,3 +39,6 @@ planning/archive/
 
 # ...except the creature's vein data, which is a small site asset
 !site/public/models/creature/*.bin
+
+.vercel
+.env*
