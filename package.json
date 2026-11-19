@@ -1,7 +1,7 @@
 {
   "name": "summoning-circle",
   "private": true,
-  "workspaces": ["site"],
+  "workspaces": ["site", "circle"],
   "scripts": {
     "dev": "npm run dev -w site",
     "build": "npm run build -w site"
