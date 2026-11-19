@@ -29,7 +29,8 @@ export async function probeDevice(env?: BrowserEnv): Promise<Sigil> {
     try {
       const adapter = e.requestAdapter ? await e.requestAdapter() : null;
       if (adapter) {
-        const isFallback = (adapter as any).isFallbackAdapter === true;
+        // NEW location first (from MDN), OLD location as fallback for older browsers
+        const isFallback = (adapter as any).info?.isFallbackAdapter === true || (adapter as any).isFallbackAdapter === true;
         if (!isFallback) {
           webgpu = true;
           gpuName = (adapter as any).info?.description;
