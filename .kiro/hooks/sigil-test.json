@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Run sigil tests on save",
+      "trigger": "PostFileSave",
+      "description": "Runs the circle workspace tests (npm test -w circle) whenever a TypeScript file in circle/src/sigil/ is saved.",
+      "matcher": "circle/src/sigil/.*\\.ts$",
+      "action": {
+        "type": "command",
+        "command": "npm test -w circle"
+      }
+    }
+  ]
+}
