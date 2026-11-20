@@ -1,61 +1,85 @@
-import { KokoroTTS } from "kokoro-js";
-import { pipeline } from "@huggingface/transformers";
+// playground/main.ts - NOW uses real summon()!
+// Task 04 Step 6: no more direct Kokoro / pipeline here!
+
+import { summon } from "../src/summon";
 
 const out = document.getElementById("out")!;
 const log = (s: string) => { out.textContent += "\n" + s; };
 
 document.getElementById("voiceBtn")!.addEventListener("click", async () => {
-  out.textContent = "=== VOICE TEST - WebGPU ===";
+  out.textContent = "=== VOICE TEST - via summon() ===";
   try {
     const start = performance.now();
-    const tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", {
-      dtype: "fp32",
-      device: "webgpu",
+    const handle = await summon("voice", {
+      onProgress: (p: any) => log(`[progress] ${p.message ?? JSON.stringify(p)}`),
     });
     const loadMs = Math.round(performance.now() - start);
-    log(`Model loaded in ${loadMs} ms`);
+    log(`summon(voice) ready in ${loadMs} ms`);
 
     const genStart = performance.now();
-    const audio = await tts.generate("Hello, I am Revenant.", { voice: "af_heart" });
+    const result = await handle.speak!("Hello, I am Revenant. This is the trailing text test");
     const genMs = Math.round(performance.now() - genStart);
     log(`Generated in ${genMs} ms`);
-    log(`Audio: ${audio.audio.length} samples, ${audio.sampling_rate} Hz`);
-    log(`Duration: ${(audio.audio.length / audio.sampling_rate).toFixed(2)} sec`);
-    log(`Real-time factor: ${(genMs / 1000 / (audio.audio.length / audio.sampling_rate)).toFixed(2)}x (must be < 1.0x to be usable)`);
-    log("VOICE: PASS - copy these numbers!");
-    audio.save("revenant-test.wav");
+    log(`Audio: ${result.samples.length} samples, ${result.sampleRate} Hz`);
+    const duration = result.samples.length / result.sampleRate;
+    log(`Duration: ${duration.toFixed(2)} sec`);
+    log(`Real-time factor: ${(genMs / 1000 / duration).toFixed(2)}x (must be < 1.0x to be usable)`);
+
+    // Play it in the browser!
+    const ctx = new AudioContext();
+    const buf = ctx.createBuffer(1, result.samples.length, result.sampleRate);
+    buf.getChannelData(0).set(result.samples as Float32Array);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start();
+    log("VOICE: PASS via summon() - you should HEAR me!");
+    await handle.banish();
   } catch (e: any) {
-    log("VOICE FAILED: " + (e?.message ?? e));
+    log("VOICE FAILED: " + (e?.message ?? JSON.stringify(e)));
+    log("Error code: " + (e?.code ?? "unknown"));
     log("Fallback would be: Xenova/speecht5_tts");
   }
 });
 
 document.getElementById("memoryBtn")!.addEventListener("click", async () => {
-  out.textContent = "=== MEMORY TEST ===";
+  out.textContent = "=== MEMORY TEST - via summon() ===";
   try {
     const start = performance.now();
-    const extractor = await pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2");
+    const handle = await summon("memory", {
+      onProgress: (p: any) => log(`[progress] ${p.message ?? JSON.stringify(p)}`),
+    });
     const loadMs = Math.round(performance.now() - start);
-    log(`Model loaded in ${loadMs} ms`);
+    log(`summon(memory) ready in ${loadMs} ms`);
 
-    const a = await extractor("I love cats", { pooling: "mean", normalize: true });
-    const b = await extractor("I love dogs", { pooling: "mean", normalize: true });
-    const c = await extractor("Quantum physics is hard", { pooling: "mean", normalize: true });
+    // Remember 3 things via REAL IndexedDB memory!
+    const id1 = await handle.remember("I love cats");
+    const id2 = await handle.remember("I love dogs");
+    const id3 = await handle.remember("Quantum physics is hard");
+    log(`Remembered 3 items, ids: ${id1}, ${id2}, ${id3}`);
 
-    const cos = (x: any, y: any) => {
-      const xa = Array.from(x.data as Float32Array);
-      const ya = Array.from(y.data as Float32Array);
-      let dot = 0;
-      for (let i = 0; i < xa.length; i++) dot += xa[i] * ya[i];
-      return dot;
-    };
+    // Recall "I love cats" - top hit should be cats or dogs, NOT physics!
+    const hits = await handle.recall("I love cats", 3);
+    log(`Recall "I love cats" top 3:`);
+    hits.forEach((h: any, i: number) => log(`  ${i + 1}. [id ${h.id}] ${h.text}`));
 
-    log(`Embedding size: ${(a.data as Float32Array).length} dims`);
-    log(`cats vs dogs similarity: ${cos(a, b).toFixed(3)} (should be HIGH)`);
-    log(`cats vs physics similarity: ${cos(a, c).toFixed(3)} (should be LOW)`);
-    log("MEMORY: PASS - copy these numbers!");
+    const top = hits[0]?.text ?? "";
+    if (top.includes("cats") || top.includes("dogs")) {
+      log("MEMORY: PASS via summon() - top hit is cats/dogs, not physics!");
+    } else {
+      log("MEMORY: WEIRD - top hit is physics, something is wrong!");
+    }
+
+    // Test forget!
+    await handle.forget(id3);
+    const after = await handle.recall("Quantum physics", 5);
+    const stillThere = after.some((h: any) => h.id === id3);
+    log(stillThere ? "FORGET: FAIL - physics still there!" : "FORGET: PASS - physics is gone!");
+
+    await handle.banish();
   } catch (e: any) {
-    log("MEMORY FAILED: " + (e?.message ?? e));
+    log("MEMORY FAILED: " + (e?.message ?? JSON.stringify(e)));
+    log("Error code: " + (e?.code ?? "unknown"));
     log("Fallback would be: Xenova/bge-small-en-v1.5");
   }
 });
