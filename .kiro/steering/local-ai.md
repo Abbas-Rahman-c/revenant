@@ -14,6 +14,13 @@ This file is the single source of truth for model IDs, library versions and API 
 4. Do not invent fallbacks. Use only the fallbacks listed below.
 5. Tier names are ONLY: tiny, small, full. Never use lite, mini, or any other name.
 
+## Browser APIs - Part 1 (from Task 01)
+
+- WebGPU: Use `navigator.gpu` to check if GPU is available. If no WebGPU, return CircleError NO_WEBGPU.
+- Web Workers: Models load ONLY inside Workers, never on main thread.
+- IndexedDB: Use `idb` library to store memories, survives reload.
+- Cross-Origin Headers: Must have COOP + COEP headers or transformers.js / Kokoro will not load.
+
 ## Voice - VERIFIED in Playground
 
 - Package: kokoro-js 1.2.1
@@ -23,9 +30,9 @@ This file is the single source of truth for model IDs, library versions and API 
 - Status: VERIFIED in circle/playground/ on 2026-11-19
 - Download size: ~300 MB
 - License: Apache-2.0
-- Browser and GPU: Chrome / Edge with WebGPU enabled, needs discrete or integrated GPU with WebGPU support
-- Cached (2nd) load time: Reload playground and press Test Voice again, copy that number here - first load 77197 ms on WASM, WebGPU load ___ ms (fill from your WebGPU run)
-- Peak memory: Check Chrome Task Manager Shift+Esc while generating, fill here - ___ MB
+- Browser and GPU: Chrome / Edge with WebGPU enabled, needs GPU with WebGPU support
+- Cached (2nd) load time: Reload playground and press Test Voice again, copy that number here - first load 77197 ms on WASM
+- Peak memory: Check Chrome Task Manager Shift+Esc while generating - ___ MB
 - Offline: Yes after first download, model cached in browser
 - Cross-origin headers: Cross-Origin-Embedder-Policy: require-corp, Cross-Origin-Opener-Policy: same-origin (in circle/playground/vite.config.ts)
 - Snippet:
