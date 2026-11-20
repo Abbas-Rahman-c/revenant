@@ -1,1 +1,13 @@
 ﻿{ "name": "circle-test", "when": "onFileSave", "pattern": "circle/src/parts/**,circle/src/workers/**", "run": "npm test -w circle" }
+{
+  "name": "circle-test",
+  "description": "Run circle tests when circle code changes",
+  "trigger": {
+    "type": "onFileSave",
+    "filePattern": "circle/**/*"
+  },
+  "action": {
+    "type": "runCommand",
+    "command": "npm test"
+  }
+}
