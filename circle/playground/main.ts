@@ -5,12 +5,12 @@ const out = document.getElementById("out")!;
 const log = (s: string) => { out.textContent += "\n" + s; };
 
 document.getElementById("voiceBtn")!.addEventListener("click", async () => {
-  out.textContent = "=== VOICE TEST ===";
+  out.textContent = "=== VOICE TEST - WebGPU ===";
   try {
     const start = performance.now();
     const tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", {
-      dtype: "q8",
-      device: "wasm",
+      dtype: "fp32",
+      device: "webgpu",
     });
     const loadMs = Math.round(performance.now() - start);
     log(`Model loaded in ${loadMs} ms`);
@@ -21,6 +21,7 @@ document.getElementById("voiceBtn")!.addEventListener("click", async () => {
     log(`Generated in ${genMs} ms`);
     log(`Audio: ${audio.audio.length} samples, ${audio.sampling_rate} Hz`);
     log(`Duration: ${(audio.audio.length / audio.sampling_rate).toFixed(2)} sec`);
+    log(`Real-time factor: ${(genMs / 1000 / (audio.audio.length / audio.sampling_rate)).toFixed(2)}x (must be < 1.0x to be usable)`);
     log("VOICE: PASS - copy these numbers!");
     audio.save("revenant-test.wav");
   } catch (e: any) {
@@ -55,6 +56,6 @@ document.getElementById("memoryBtn")!.addEventListener("click", async () => {
     log("MEMORY: PASS - copy these numbers!");
   } catch (e: any) {
     log("MEMORY FAILED: " + (e?.message ?? e));
-    log("Fallback would be: bge-small-en-v1.5");
+    log("Fallback would be: Xenova/bge-small-en-v1.5");
   }
 });

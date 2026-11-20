@@ -1,0 +1,1 @@
+﻿{ "name": "circle-test", "when": "onFileSave", "pattern": "circle/src/parts/**,circle/src/workers/**", "run": "npm test -w circle" }
