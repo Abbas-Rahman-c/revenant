@@ -20,9 +20,9 @@ export const ORGANS: Organ[] = [
     id: "brain",
     name: "Brain",
     does: "Thinks and answers",
-    model: "Small language model",
+    model: "Small language model (Llama 3.2 1B)",
     tech: "WebGPU",
-    approxMB: 350,
+    approxMB: 663,
     socket: { x: 160, y: 62 },
   },
   {

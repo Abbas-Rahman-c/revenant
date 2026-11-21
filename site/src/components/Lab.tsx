@@ -7,7 +7,7 @@ import { ORGANS, ORGAN_BY_ID, firstWords, type OrganId } from "../organs";
 import { playCharge, playClack, playHeartbeat, playStitch, playZap, stopSpeech } from "../sound";
 import { Mind, failureLine, summonParts, type PartState } from "../mind";
 import { Talk } from "./Talk";
-import type { PartId } from "circle";
+import { splitSentences, type PartId } from "circle";
 
 // three.js is large, so the 3D creature loads in its own chunk
 const CreatureBody = lazy(() => import("./CreatureBody"));
@@ -15,6 +15,11 @@ const CreatureBody = lazy(() => import("./CreatureBody"));
 type Phase = "idle" | "charging" | "alive";
 /** The coils always charge at least this long, even when every model loads from storage. */
 const CHARGE_MS = 1800;
+/** Subtitles show the last two sentences; the conversation log keeps the whole reply. */
+const subtitleOf = (text: string) => {
+  const s = splitSentences(text);
+  return s.length > 2 ? s.slice(-2).join(" ") : text;
+};
 const fmtMB = (b?: number) => (b === undefined ? "" : `${Math.round(b / 1048576)} MB`);
 /** Matches the CSS build sequence: bones, muscle, flesh, seams, clamps. */
 const BUILD_MS = 3900;
@@ -287,7 +292,7 @@ export function Lab() {
             <>
               <Heartbeat />
               <p className="subtitle">
-                <span key={line.length < 2 ? line : "reply"}>{line}</span>
+                <span>{subtitleOf(line)}</span>
               </p>
               {Object.entries(loads)
                 .filter(([, st]) => st?.stage === "failed" && st.error && st.error.code !== "ABORTED")

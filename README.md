@@ -41,7 +41,7 @@ site/ (React + three.js)            circle/ (the runtime)                    one
 | Memory | 22.6 MB | recalls by meaning ("what weather do I like" finds "I love storms"); survives a reload |
 | Ears | 41.5 MB | transcribed 3 s of speech word-for-word in 2.4 s |
 | Voice | 310.5 MB | 0.56 to 0.95 s of compute per second of speech: faster than real time |
-| Brain (small) | ~220 MB | first word in 1.1 s once warm, about 6 words per second |
+| Brain (small: SmolLM2 360M) | 194 MB | first word in 1.1 s once warm, about 6 words per second |
 
 Details and dates in [`.kiro/steering/local-ai.md`](.kiro/steering/local-ai.md).
 

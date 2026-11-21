@@ -98,7 +98,7 @@ import { CreateMLCEngine } from "@mlc-ai/web-llm";
 const engine = await CreateMLCEngine("SmolLM2-360M-Instruct-q4f16_1-MLC", { initProgressCallback: (r) => console.log(r.progress, r.text) });
 for await (const c of await engine.chat.completions.create({ messages: [{ role: "user", content: "Hi" }], stream: true })) console.log(c.choices[0]?.delta?.content);
 ```
-- Measured 2026-11-21 (built-in browser pane, Intel Gen12 laptop GPU with shader-f16, slow network ~1 MB/s): SmolLM2-360M-Instruct-q4f16_1-MLC is 7 weight files of ~32 MB (about 220 MB); load 268 s on first visit. First question: first token after 31 s (shader compile), so the brain now warms up with a 2-token generation while loading. Second question: first token 1.1 s, 34 tokens in 5.7 s.
+- Measured 2026-11-21 (built-in browser pane, Intel Gen12 laptop GPU with shader-f16, slow network ~1 MB/s): SmolLM2-360M-Instruct-q4f16_1-MLC is 7 weight files, 194 MB in all (Hugging Face API sizes); Llama-3.2-1B-Instruct-q4f16_1-MLC is 22 files, 663 MB; load 268 s on first visit. First question: first token after 31 s (shader compile), so the brain now warms up with a 2-token generation while loading. Second question: first token 1.1 s, 34 tokens in 5.7 s.
 - Gotchas: runs inside our own worker (WebGPU is available in workers). Progress only moves when a whole ~32 MB weight file finishes, so on a slow network it sits at 0% for a while. Choose the q4f32 build when `adapter.features.has("shader-f16")` is false. Progress is a fraction only.
 
 ### Ears - VERIFIED in the test bench
