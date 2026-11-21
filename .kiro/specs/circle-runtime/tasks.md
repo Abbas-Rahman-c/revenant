@@ -19,8 +19,8 @@
   - [x] 5.1 Properties P1 to P5 — _Req 2.1, 3.2, 4.1, 5.2, 7.3_
   - [x] 5.2 Units: crash, crash while loading, throwing constructor, unsupported tiers, pre-aborted signal, banish, progress
 - [x] 6. Test bench page (`npm run playground -w circle`) that uses only `summon()`
-- [ ] 7. Verify each part in a real browser and record numbers in `local-ai.md`
+- [x] 7. Verify each part in a real browser and record numbers in `local-ai.md`
   - [x] 7.1 Memory: 22.6 MB, remember, reload, recall
   - [x] 7.2 Ears: 41.5 MB on WebAssembly
-  - [ ] 7.3 Voice on WebGPU: real-time factor
-  - [ ] 7.4 Brain: first token and tokens per second
+  - [x] 7.3 Voice on WebGPU: real-time factor 0.56 to 0.95
+  - [x] 7.4 Brain: SmolLM2 360M and Llama 3.2 1B, first token about 1.1 to 1.3 s once warm
