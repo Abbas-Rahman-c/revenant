@@ -11,6 +11,7 @@ import {
   type ChatMessage,
   type CircleError,
   type EarsHandle,
+  type EyesHandle,
   type MemoryHandle,
   type PartId,
   type Progress,
@@ -110,6 +111,8 @@ export type TurnEvents = {
 export class Mind {
   private history: ChatMessage[] = [];
   private scripted = 0;
+  /** Set when the visitor opens the creature's eyes (camera) in talk mode. */
+  eyes: EyesHandle | null = null;
   constructor(
     public handles: Handles,
     private stitched: Set<OrganId>,
@@ -135,7 +138,14 @@ export class Mind {
       this.stitched.has("memory") ? (known.length ? `Things this visitor told you before:\n${known.join("\n")}` : "") : "You have no memory: you will forget this visitor when they leave.",
       this.stitched.has("ears") ? "" : "You have no ears. The visitor is typing to you.",
       this.stitched.has("voice") ? "" : "You have no voice. Your words appear as subtitles.",
-      this.stitched.has("eyes") ? "" : "You have no eyes. You cannot see the visitor.",
+      !this.stitched.has("eyes")
+        ? "You have no eyes. You cannot see the visitor."
+        : this.eyes
+          ? (() => {
+              const seen = this.eyes.describe();
+              return seen ? `Through your eyes (the visitor's camera) you can see ${seen}.` : "Your eyes are open but you see nothing you recognise.";
+            })()
+          : "Your eyes are closed: the visitor has not opened the camera.",
     ].filter(Boolean);
 
     const messages: ChatMessage[] = [
@@ -194,6 +204,8 @@ export class Mind {
 
   banish() {
     stopSpeech();
+    this.eyes?.close();
+    this.eyes = null;
     for (const h of Object.values(this.handles)) h?.banish();
     this.handles = {};
   }

@@ -2144,3 +2144,32 @@ html {
   font-size: 0.76rem;
   color: var(--silver-dim);
 }
+
+.talk__eyes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.talk__eye {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--arc);
+  box-shadow: 0 0 14px rgba(159, 194, 255, 0.35);
+  background: var(--stone-deep);
+}
+.talk__eye-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  filter: grayscale(1) contrast(1.15);
+}
+.talk__sees {
+  font-family: var(--f-mono);
+  font-size: 0.76rem;
+  color: var(--silver-dim);
+}

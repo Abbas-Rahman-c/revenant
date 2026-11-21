@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@huggingface/transformers": "4.3.2",
+    "@mediapipe/tasks-vision": "1.2.3",
     "@mlc-ai/web-llm": "0.2.89",
     "idb": "8.0.4",
     "kokoro-js": "1.2.1"

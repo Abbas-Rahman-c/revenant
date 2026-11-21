@@ -1,4 +1,4 @@
-import type { CircleError, ErrorCode, PartId } from "./types.js";
+import type { AnyPart, CircleError, ErrorCode } from "./types.js";
 
 export const ERROR_CODES: readonly ErrorCode[] = [
   "NO_WEBGPU",
@@ -10,7 +10,7 @@ export const ERROR_CODES: readonly ErrorCode[] = [
   "ABORTED",
 ];
 
-export function circleError(code: ErrorCode, part: PartId, message: string): CircleError {
+export function circleError(code: ErrorCode, part: AnyPart, message: string): CircleError {
   return { code, part, message };
 }
 
@@ -42,7 +42,7 @@ function messageOf(x: unknown): string {
  * Turns anything thrown into a CircleError. The fallback code depends on where it happened:
  * loading a model, or running one. Known failure messages are mapped to more specific codes.
  */
-export function toCircleError(x: unknown, part: PartId, during: "load" | "run"): CircleError {
+export function toCircleError(x: unknown, part: AnyPart, during: "load" | "run"): CircleError {
   if (isCircleError(x)) return x;
   const message = messageOf(x) || "Unknown error";
   const name = x instanceof Error ? x.name : "";

@@ -9,7 +9,7 @@ export type Organ = {
   model: string;
   /** The browser technology it is stitched from. */
   tech: string;
-  /** Rough download size for the preview. Real sizes come from the runtime once it exists. */
+  /** Largest download for this part (the full tier), measured. Smaller devices get smaller models. */
   approxMB: number;
   /** Socket position on the creature, in the creature's 320 x 520 viewBox. */
   socket: { x: number; y: number };
@@ -40,25 +40,25 @@ export const ORGANS: Organ[] = [
     does: "Hears and writes down speech",
     model: "Speech to text (Whisper)",
     tech: "WebAssembly",
-    approxMB: 75,
+    approxMB: 42,
     socket: { x: 98, y: 132 },
   },
   {
     id: "voice",
     name: "Voice",
     does: "Speaks out loud",
-    model: "Text to speech",
-    tech: "Web Audio",
-    approxMB: 90,
+    model: "Text to speech (Kokoro)",
+    tech: "WebGPU and Web Audio",
+    approxMB: 311,
     socket: { x: 160, y: 214 },
   },
   {
     id: "memory",
     name: "Memory",
     does: "Remembers you between visits",
-    model: "Text embeddings",
-    tech: "Origin private file system",
-    approxMB: 25,
+    model: "Text embeddings (MiniLM)",
+    tech: "IndexedDB",
+    approxMB: 23,
     socket: { x: 196, y: 300 },
   },
 ];

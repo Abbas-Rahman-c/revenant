@@ -213,7 +213,7 @@ export function Lab() {
           </div>
         </div>
         {phase === "alive" && mind && (
-          <Talk mind={mind} onLine={setLine} onSpeaking={setSpeaking} />
+          <Talk mind={mind} hasEyes={parts.has("eyes")} onLine={setLine} onSpeaking={setSpeaking} />
         )}
         <p className="note">
           Every part is a real AI model. Each downloads once from Hugging Face, then runs offline on your device. Your

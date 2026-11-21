@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { openEyes } from "circle";
 import { startRecording, type Mind } from "../mind";
 
 type Turn = { who: "you" | "it"; text: string };
@@ -6,13 +7,40 @@ type Turn = { who: "you" | "it"; text: string };
 /** Talk to the creature: hold the mic button (when it has ears) or type. */
 export function Talk({
   mind,
+  hasEyes,
   onLine,
   onSpeaking,
 }: {
   mind: Mind;
+  hasEyes: boolean;
   onLine: (text: string) => void;
   onSpeaking: (on: boolean) => void;
 }) {
+  const [eyes, setEyes] = useState<"closed" | "opening" | "open">(mind.eyes ? "open" : "closed");
+  const [sees, setSees] = useState("");
+  const eyeRef = useRef<HTMLDivElement>(null);
+
+  async function openTheEyes() {
+    setEyes("opening");
+    try {
+      mind.eyes = await openEyes();
+      setEyes("open");
+    } catch (e) {
+      setEyes("closed");
+      setNote((e as { message?: string }).message ?? "The eyes would not open.");
+    }
+  }
+
+  // show the camera in a small round eye, and what it recognises
+  useEffect(() => {
+    if (eyes !== "open" || !mind.eyes || !eyeRef.current) return;
+    const v = mind.eyes.video;
+    v.className = "talk__eye-video";
+    eyeRef.current.replaceChildren(v);
+    const id = window.setInterval(() => setSees(mind.eyes?.describe() ?? ""), 700);
+    return () => window.clearInterval(id);
+  }, [eyes, mind]);
+
   const [text, setText] = useState("");
   const [state, setState] = useState<"ready" | "listening" | "hearing" | "thinking">("ready");
   const [log, setLog] = useState<Turn[]>([]);
@@ -82,6 +110,20 @@ export function Talk({
   const busy = state !== "ready" && state !== "listening";
   return (
     <div className="talk">
+      {hasEyes && (
+        <div className="talk__eyes">
+          {eyes === "open" ? (
+            <>
+              <div className="talk__eye" ref={eyeRef} aria-hidden="true" />
+              <span className="talk__sees">{sees ? `It sees ${sees}.` : "It is looking."}</span>
+            </>
+          ) : (
+            <button type="button" className="btn-quiet" disabled={eyes === "opening"} onClick={openTheEyes}>
+              {eyes === "opening" ? "Opening its eyes…" : "Open its eyes (camera)"}
+            </button>
+          )}
+        </div>
+      )}
       {log.length > 0 && (
         <ol className="talk__log" ref={logRef} aria-label="Conversation">
           {log.map((t, i) => (

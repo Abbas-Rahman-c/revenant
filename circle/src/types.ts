@@ -1,6 +1,8 @@
 // Public types of the circle runtime: the contract between the site and the parts.
 
+/** Parts that load a model in a worker through summon(). The eyes run on the main thread (parts/eyes.ts). */
 export type PartId = "brain" | "ears" | "voice" | "memory";
+export type AnyPart = PartId | "eyes";
 export type Tier = "tiny" | "small" | "full";
 
 export type Progress = {
@@ -24,7 +26,7 @@ export type ErrorCode =
   | "RUN_FAILED"
   | "ABORTED";
 
-export type CircleError = { code: ErrorCode; part: PartId; message: string };
+export type CircleError = { code: ErrorCode; part: AnyPart; message: string };
 
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
