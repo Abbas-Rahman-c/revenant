@@ -32,7 +32,7 @@ export function splitSentences(text: string): string[] {
 }
 
 export async function summon(part: "voice" | "memory", opts?: SummonOpts): Promise<PartHandle> {
-  const tiers = opts?.tier && opts.tier !== "auto" ? [opts.tier] : TIER_ORDER;
+    const tiers = opts?.tier && opts.tier !== "auto" ? [opts.tier] : (part === "voice" ? ["full"] : TIER_ORDER);
   let lastError: CircleError | null = null;
 
   for (const tier of tiers) {
