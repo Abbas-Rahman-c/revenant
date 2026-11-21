@@ -1,0 +1,12 @@
+{
+  "name": "local-ai-md",
+  "description": "Check local-ai.md has no blanks and code blocks are closed",
+  "trigger": {
+    "type": "onFileSave",
+    "filePattern": ".kiro/steering/local-ai.md"
+  },
+  "action": {
+    "type": "runCommand",
+    "command": "node scripts/check-local-ai.mjs"
+  }
+}
