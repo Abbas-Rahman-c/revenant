@@ -40,7 +40,7 @@ Gotchas:
 
 - Package: kokoro-js 1.2.1
 - Model ID: onnx-community/Kokoro-82M-v1.0-ONNX
-- Voice: af_heart
+- Voice: af_heart (measured); the runtime uses am_michael, a male voice listed in kokoro-js 1.2.1's voice table (grade C+)
 - Device: webgpu, dtype fp32 (README recommended) / wasm, dtype q8 (fallback)
 - Status: VERIFIED in circle/playground/ on 2026-11-19
 - Download size: 300 MB
@@ -65,7 +65,7 @@ const audio = await tts.generate("Hello, I am Revenant.", { voice: "af_heart" })
 - Package: @huggingface/transformers 4.3.2
 - Model ID: Xenova/all-MiniLM-L6-v2
 - Status: VERIFIED in circle/playground/ on 2026-11-19
-- Download size: 23 MB
+- Download size: 22.6 MB (measured from byte progress, 2026-11-21)
 - License: Apache-2.0
 - Browser and GPU: Any modern Chrome / Edge / Firefox / Safari, no GPU needed
 - Cached (2nd) load time: 290 ms
@@ -82,9 +82,48 @@ const out = await extractor("I love cats", { pooling: "mean", normalize: true })
 - Fallback if MiniLM fails: Xenova/bge-small-en-v1.5, then keyword match.
 - Per-tier decision: full and small = MiniLM; tiny = keyword match, no model.
 
+### Brain - VERIFIED against the package
+
+- Package: @mlc-ai/web-llm 0.2.89 (Apache-2.0)
+- Model IDs (all in `prebuiltAppConfig.model_list` of 0.2.89, checked 2026-11-21):
+  - full: Llama-3.2-1B-Instruct-q4f16_1-MLC (VRAM 879 MB); without the GPU feature `shader-f16`: Llama-3.2-1B-Instruct-q4f32_1-MLC (1129 MB)
+  - small: SmolLM2-360M-Instruct-q4f16_1-MLC (376 MB, needs `shader-f16`); without it: SmolLM2-360M-Instruct-q4f32_1-MLC (580 MB)
+  - tiny: none (WebLLM needs WebGPU); the site falls back to scripted lines
+- License: Llama 3.2 Community License (Llama); Apache-2.0 (SmolLM2)
+- API used: `CreateMLCEngine(modelId, { initProgressCallback })` (callback gets `{ progress: 0..1, text }`, no byte counts), `engine.chat.completions.create({ messages, stream: true, max_tokens, temperature })` (async iterable of `{ choices: [{ delta: { content } }] }`), `engine.interruptGenerate()`, `hasModelInCache(modelId)`
+- Snippet:
+```ts
+import { CreateMLCEngine } from "@mlc-ai/web-llm";
+const engine = await CreateMLCEngine("SmolLM2-360M-Instruct-q4f16_1-MLC", { initProgressCallback: (r) => console.log(r.progress, r.text) });
+for await (const c of await engine.chat.completions.create({ messages: [{ role: "user", content: "Hi" }], stream: true })) console.log(c.choices[0]?.delta?.content);
+```
+- Gotchas: runs inside our own worker (WebGPU is available in workers). Choose the q4f32 build when `adapter.features.has("shader-f16")` is false. Progress is a fraction only.
+
+### Ears - VERIFIED in the test bench
+
+- Package: @huggingface/transformers 4.3.2
+- Model ID: onnx-community/whisper-tiny.en (Apache-2.0, model card checked 2026-11-21)
+- Device and dtype: full = webgpu fp32; small and tiny = wasm q8
+- Download size: 41.5 MB (wasm q8, measured from the library's byte progress, 2026-11-21)
+- First load: 56 s on the built-in browser pane (Intel Gen12 laptop GPU, slow network), including download and a one-second warm-up
+- Input: 16 kHz mono Float32Array
+- API used: `pipeline("automatic-speech-recognition", model, { device, dtype, progress_callback })`, then `await asr(samples)` returns `{ text }`
+- Snippet:
+```ts
+import { pipeline } from "@huggingface/transformers";
+const asr = await pipeline("automatic-speech-recognition", "onnx-community/whisper-tiny.en", { device: "wasm", dtype: "q8" });
+const { text } = await asr(new Float32Array(16000));
+```
+- Gotchas: Whisper returns things like "[BLANK_AUDIO]" for silence; the ears part turns those into an empty string.
+
+### Progress events (Transformers.js and Kokoro)
+
+- Verified in `@huggingface/transformers` 4.3.2 `types/utils/core.d.ts`: the `progress_callback` receives `{ status: "initiate" | "download" | "done", file }`, `{ status: "progress", file, loaded, total, progress }`, `{ status: "progress_total", loaded, total }` and `{ status: "ready" }`. Kokoro 1.2.1 passes the same callback to its own Transformers.js 3.8.1.
+- `circle/src/parts/progress.ts` adds up `loaded` and `total` per file.
+
 ### Storage and headers (to verify)
 
-- IndexedDB through `idb` 8.0.4 stores memories and survives a reload. API calls used (`openDB`, `put`, `getAll`, `clear`) still need a link to the idb README here.
+- IndexedDB through `idb` 8.0.4 (ISC) stores memories and survives a reload (verified 2026-11-21: remembered, reloaded, recalled). API used: `openDB(name, version, { upgrade })`, `db.add`, `db.getAll`, `db.delete`, `db.clear`. Tests use `fake-indexeddb` 6.2.8 (Apache-2.0).
 - Cross-origin isolation: the playground sends COOP `same-origin` + COEP `require-corp`. Whether Kokoro or Transformers.js actually *need* them is not yet measured; test once with the headers removed and record the result.
 
 ## Verified browser APIs (device probe)

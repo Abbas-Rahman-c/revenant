@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Run circle tests on save",
+  "description": "When runtime code in circle/src changes, run the circle tests (unit and property-based) and report any failure before moving on.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["circle/src/**/*.ts"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "npm test -w circle"
+  }
+}

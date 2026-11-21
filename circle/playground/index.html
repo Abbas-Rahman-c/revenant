@@ -1,20 +1,36 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Revenant - Voice + Memory Playground</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Circle Test Bench</title>
     <style>
-      body { font-family: sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; }
-      button { padding: 12px 20px; margin: 8px 8px 8px 0; font-size: 16px; cursor: pointer; }
-      pre { background: #111; color: #0f0; padding: 16px; white-space: pre-wrap; }
+      :root { color-scheme: dark; --bg: #16151a; --panel: #211f27; --line: #34313d; --ink: #e9e6ef; --muted: #9d98aa; --arc: #9fc2ff; --bad: #e07070; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 system-ui, sans-serif; }
+      main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+      h1 { font-size: 20px; margin: 0 0 4px; }
+      p.note { color: var(--muted); margin: 0 0 20px; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 12px; }
+      section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+      h2 { font-size: 15px; margin: 0 0 10px; display: flex; justify-content: space-between; }
+      h2 small { color: var(--muted); font-weight: 400; }
+      .row { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; align-items: center; }
+      button, select, input, textarea { font: inherit; color: inherit; background: #2b2933; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+      button { cursor: pointer; }
+      button:disabled { opacity: .45; cursor: default; }
+      input, textarea { flex: 1; min-width: 0; }
+      .bar { height: 6px; background: #2b2933; border-radius: 3px; overflow: hidden; margin: 8px 0 4px; }
+      .bar i { display: block; height: 100%; width: 0; background: var(--arc); transition: width .15s; }
+      pre { background: #0f0e12; border-radius: 6px; padding: 8px; margin: 8px 0 0; max-height: 220px; overflow: auto; white-space: pre-wrap; font-size: 12px; }
+      .err { color: var(--bad); }
     </style>
   </head>
   <body>
-    <h1>Revenant Playground - Task 02</h1>
-    <p>1. Press Test Voice. 2. Press Test Memory. 3. Copy the numbers into steering.</p>
-    <button id="voiceBtn">Test Voice (Kokoro)</button>
-    <button id="memoryBtn">Test Memory (MiniLM)</button>
-    <pre id="out">Ready. Press a button...</pre>
+    <main>
+      <h1>Circle test bench</h1>
+      <p class="note">Every button goes through <code>summon()</code>, the same code the site uses. Device: <span id="sigil">probing…</span></p>
+      <div class="grid" id="parts"></div>
+    </main>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

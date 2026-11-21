@@ -2029,3 +2029,118 @@ html[data-quality="0"] body::before {
 html {
   scroll-behavior: smooth;
 }
+
+/* load bars: failed and waiting */
+.load.is-failed .load__bar span {
+  background: var(--suture);
+  box-shadow: 0 0 8px var(--suture);
+}
+.load.is-failed .load__mb {
+  color: var(--suture);
+}
+.load__bar.is-wait span {
+  background: var(--line);
+  box-shadow: none;
+}
+
+.missing {
+  margin: 6px auto 0;
+  max-width: 52ch;
+  text-align: center;
+  font-family: var(--f-mono);
+  font-size: 0.74rem;
+  color: var(--silver-dim);
+}
+
+/* talk mode */
+.talk {
+  margin-top: 20px;
+  max-width: 46ch;
+}
+.talk__log {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  scrollbar-width: thin;
+}
+.talk__turn {
+  margin: 0 0 6px;
+}
+.talk__turn--it {
+  color: var(--arc);
+  font-style: italic;
+}
+.talk__who {
+  font-family: var(--f-mono);
+  font-style: normal;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--silver-dim);
+  margin-right: 4px;
+}
+.talk__form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.talk__input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(12, 12, 14, 0.6);
+  color: var(--silver);
+  font: inherit;
+  font-size: 1rem;
+}
+.talk__input:focus-visible {
+  outline: none;
+  border-color: var(--arc);
+  box-shadow: 0 0 0 3px rgba(159, 194, 255, 0.18);
+}
+.talk__mic {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--copper);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--copper-hi);
+  cursor: pointer;
+  touch-action: none;
+  transition: background 150ms var(--ease), box-shadow 150ms var(--ease), scale 150ms ease-out;
+}
+.talk__mic svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.talk__mic.is-on {
+  background: var(--copper);
+  color: var(--stone-deep);
+  box-shadow: 0 0 0 6px rgba(196, 122, 58, 0.25), 0 0 18px var(--copper);
+  scale: 1.06;
+}
+.talk__mic:disabled,
+.talk__input:disabled {
+  opacity: 0.5;
+}
+.talk__status {
+  min-height: 1.4em;
+  margin: 6px 0 0;
+  font-family: var(--f-mono);
+  font-size: 0.76rem;
+  color: var(--silver-dim);
+}

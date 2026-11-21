@@ -1,0 +1,26 @@
+# Implementation Plan
+
+- [x] 1. Types, errors and protocol
+  - [x] 1.1 `types.ts` with the four typed handles and `Progress` (fraction plus optional bytes) — _Req 1, 6_
+  - [x] 1.2 `errors.ts`: `toCircleError` with specific code mapping — _Req 4_
+  - [x] 1.3 `protocol.ts` with `WorkerLike` for injection — _Req 2_
+- [x] 2. Worker host and connection
+  - [x] 2.1 `host.ts`: one answer per id, per-request abort, retryable load — _Req 2, 5_
+  - [x] 2.2 `conn.ts`: settle once, crash rejects all waiting and later requests — _Req 2.2_
+- [x] 3. Parts
+  - [x] 3.1 Registry with verified model IDs; `registry-guard` hook — _Req 8_
+  - [x] 3.2 Memory: IndexedDB v2 with autoIncrement, embeddings or keywords — _Req 7_
+  - [x] 3.3 Voice: Kokoro on WebGPU, sentence streaming, transferable audio — _Req 1.3, 8.2_
+  - [x] 3.4 Ears: Whisper tiny.en, silence filtering — _Req 1.2_
+  - [x] 3.5 Brain: WebLLM, streamed tokens, interrupt on abort, f16 detection — _Req 1.1, 5.3_
+  - [x] 3.6 Byte-accurate progress from Transformers.js events — _Req 6_
+- [x] 4. `summon()` with tier fallback and typed handles — _Req 1, 3_
+- [x] 5. Tests through `FakeWorker`
+  - [x] 5.1 Properties P1 to P5 — _Req 2.1, 3.2, 4.1, 5.2, 7.3_
+  - [x] 5.2 Units: crash, crash while loading, throwing constructor, unsupported tiers, pre-aborted signal, banish, progress
+- [x] 6. Test bench page (`npm run playground -w circle`) that uses only `summon()`
+- [ ] 7. Verify each part in a real browser and record numbers in `local-ai.md`
+  - [x] 7.1 Memory: 22.6 MB, remember, reload, recall
+  - [x] 7.2 Ears: 41.5 MB on WebAssembly
+  - [ ] 7.3 Voice on WebGPU: real-time factor
+  - [ ] 7.4 Brain: first token and tokens per second

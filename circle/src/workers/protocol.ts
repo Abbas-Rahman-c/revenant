@@ -1,21 +1,32 @@
-﻿export type PartId = "voice" | "memory";
-export type Progress = {
-  stage: "checking" | "downloading" | "warming-up" | "ready";
-  loadedBytes: number;
-  totalBytes: number;
-  fromCache: boolean;
+﻿// The message protocol between the main thread and a part's worker.
+// Every request has an id; every request gets exactly one terminal answer (result or error).
+
+import type { ErrorCode, Progress, Tier } from "../types.js";
+
+export type ToWorker =
+  | { id: number; type: "load"; tier: Tier }
+  | { id: number; type: "run"; op: string; args: unknown }
+  /** Cancels the request with this id. Has no answer of its own. */
+  | { id: number; type: "abort" };
+
+export type WorkerProgress = Omit<Progress, "part">;
+
+export type FromWorker =
+  | { id: number; type: "progress"; progress: WorkerProgress }
+  | { id: number; type: "chunk"; value: unknown }
+  | { id: number; type: "result"; value: unknown }
+  | { id: number; type: "error"; error: { code: ErrorCode; message: string } };
+
+/** The parts of a Worker the runtime uses, so tests can pass a fake one. */
+export type WorkerLike = {
+  postMessage(message: ToWorker): void;
+  addEventListener(type: "message", listener: (e: { data: FromWorker }) => void): void;
+  addEventListener(type: "error", listener: (e: unknown) => void): void;
+  terminate(): void;
 };
-export type CircleError = {
-  code: "NO_WEBGPU" | "OUT_OF_MEMORY" | "LOW_STORAGE" | "DOWNLOAD_FAILED" | "MODEL_LOAD_FAILED" | "ABORTED";
-  part: PartId;
-  message: string;
+
+/** The worker's side: where it receives requests and posts answers. */
+export type WorkerScope = {
+  postMessage(message: FromWorker, transfer?: Transferable[]): void;
+  addEventListener(type: "message", listener: (e: { data: ToWorker }) => void): void;
 };
-export type WorkerIn =
-  | { id: number; type: "load"; part: PartId; payload: { tier: string } }
-  | { id: number; type: "run"; part: PartId; payload: any }
-  | { id: number; type: "abort"; part: PartId; payload: {} };
-export type WorkerOut =
-  | { id: number; type: "progress"; payload: Progress }
-  | { id: number; type: "result"; payload: any }
-  | { id: number; type: "chunk"; payload: any }
-  | { id: number; type: "error"; payload: CircleError };

@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Registry model IDs must be verified",
+  "description": "When the part registry changes, check that every model ID in it is recorded in .kiro/steering/local-ai.md.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["circle/src/parts/registry.ts"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "node scripts/check-registry.mjs"
+  }
+}

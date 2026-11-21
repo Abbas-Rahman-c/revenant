@@ -21,6 +21,65 @@ function audio() {
   return enabled ? ctx : null;
 }
 
+let current: AudioBufferSourceNode | null = null;
+
+/**
+ * Plays the creature's voice (samples from the voice model). Slowed slightly, which lowers the pitch,
+ * and run through a soft tube-like saturation. When sound is off it only keeps time, so the mouth still moves.
+ */
+export function playSamples(samples: Float32Array, sampleRate: number, onStart: () => void, onEnd: () => void): Promise<void> {
+  const rate = 0.92;
+  const seconds = samples.length / sampleRate / rate;
+  const ac = audio();
+  return new Promise((resolve) => {
+    const end = () => {
+      onEnd();
+      resolve();
+    };
+    onStart();
+    if (!ac) {
+      window.setTimeout(end, seconds * 1000);
+      return;
+    }
+    const buf = ac.createBuffer(1, samples.length, sampleRate);
+    buf.getChannelData(0).set(samples);
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    src.playbackRate.value = rate;
+    const shape = ac.createWaveShaper();
+    const curve = new Float32Array(256);
+    for (let i = 0; i < 256; i++) {
+      const x = (i / 255) * 2 - 1;
+      curve[i] = Math.tanh(1.6 * x) / Math.tanh(1.6);
+    }
+    shape.curve = curve;
+    const tone = ac.createBiquadFilter();
+    tone.type = "lowshelf";
+    tone.frequency.value = 220;
+    tone.gain.value = 4;
+    const gain = ac.createGain();
+    gain.gain.value = 0.9;
+    src.connect(shape).connect(tone).connect(gain).connect(ac.destination);
+    src.onended = () => {
+      if (current === src) current = null;
+      end();
+    };
+    current = src;
+    src.start();
+  });
+}
+
+/** Stops any voice that is playing, from the model or the browser. */
+export function stopSpeech() {
+  try {
+    current?.stop();
+  } catch {
+    /* already stopped */
+  }
+  current = null;
+  window.speechSynthesis?.cancel();
+}
+
 function noiseBuffer(ac: AudioContext, seconds: number) {
   const buf = ac.createBuffer(1, ac.sampleRate * seconds, ac.sampleRate);
   const data = buf.getChannelData(0);

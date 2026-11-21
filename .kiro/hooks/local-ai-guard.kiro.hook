@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Guard local-ai.md",
+  "description": "When the verified-facts steering file changes, check it still has every section, closed code blocks and no blanks. Agents have truncated this file before.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [".kiro/steering/local-ai.md"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "node scripts/check-local-ai.mjs"
+  }
+}

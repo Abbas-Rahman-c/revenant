@@ -3,14 +3,19 @@ import { createPortal } from "react-dom";
 import { Glyph } from "./Creature";
 import type { CreatureSceneHandle } from "./CreatureBody";
 import { KnifeSwitch } from "./KnifeSwitch";
-import { ORGANS, firstWords, type OrganId } from "../organs";
-import { playCharge, playClack, playHeartbeat, playStitch, playZap, speak } from "../sound";
+import { ORGANS, ORGAN_BY_ID, firstWords, type OrganId } from "../organs";
+import { playCharge, playClack, playHeartbeat, playStitch, playZap, stopSpeech } from "../sound";
+import { Mind, failureLine, summonParts, type PartState } from "../mind";
+import { Talk } from "./Talk";
+import type { PartId } from "circle";
 
 // three.js is large, so the 3D creature loads in its own chunk
 const CreatureBody = lazy(() => import("./CreatureBody"));
 
 type Phase = "idle" | "charging" | "alive";
+/** The coils always charge at least this long, even when every model loads from storage. */
 const CHARGE_MS = 1800;
+const fmtMB = (b?: number) => (b === undefined ? "" : `${Math.round(b / 1048576)} MB`);
 /** Matches the CSS build sequence: bones, muscle, flesh, seams, clamps. */
 const BUILD_MS = 3900;
 
@@ -31,7 +36,10 @@ export function Lab() {
   const [parts, setParts] = useState<Set<OrganId>>(new Set());
   const [flying, setFlying] = useState<OrganId | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
-  const [loadStep, setLoadStep] = useState(0); // 0..1 across all attached parts
+  const [loads, setLoads] = useState<Partial<Record<PartId, PartState>>>({});
+  const [mind, setMind] = useState<Mind | null>(null);
+  const [line, setLine] = useState("");
+  const abortRef = useRef<AbortController | null>(null);
   const [flash, setFlash] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [stageRoot, setStageRoot] = useState<HTMLElement | null>(null);
@@ -112,24 +120,19 @@ export function Lab() {
     playClack();
     const reduce = reducedMotion();
     setPhase("charging");
-    setLoadStep(0);
-    const stop = playCharge(CHARGE_MS / 1000);
-    // preview: fill the load bars over the charge time
-    await new Promise<void>((resolve) => {
-      if (reduce) {
-        setLoadStep(1);
-        return window.setTimeout(resolve, 300);
-      }
-      const start = performance.now();
-      const tick = (now: number) => {
-        const t = Math.min((now - start) / CHARGE_MS, 1);
-        setLoadStep(t);
-        if (t < 1) requestAnimationFrame(tick);
-        else resolve();
-      };
-      requestAnimationFrame(tick);
-    });
+    setLoads({});
+    const ac = new AbortController();
+    abortRef.current = ac;
+    const stop = playCharge(8);
+    const minimum = new Promise((r) => window.setTimeout(r, reduce ? 300 : CHARGE_MS));
+    // the real thing: every stitched part loads its model, in parallel, in its own worker
+    const handles = await summonParts(parts, (id, st) => setLoads((l) => ({ ...l, [id]: st })), ac.signal);
+    await minimum;
     stop();
+    if (ac.signal.aborted) {
+      Object.values(handles).forEach((h) => h?.banish());
+      return;
+    }
 
     playZap();
     if (!reduce && creatureRef.current) {
@@ -137,18 +140,23 @@ export function Lab() {
       window.setTimeout(() => setFlash(false), 180);
       await creatureRef.current.strike();
     }
+    const m = new Mind(handles, parts);
+    setMind(m);
     setPhase("alive");
-    // its first words, once it has a brain to think them and a voice to say them
-    if (parts.has("brain") && parts.has("voice")) {
-      window.setTimeout(() => speak(firstWords(parts), () => setSpeaking(true), () => setSpeaking(false)), 700);
-    }
+    const first = firstWords(parts);
+    setLine(first);
+    window.setTimeout(() => void m.say(first, { onSpeaking: setSpeaking }), 700);
   }, [phase, parts]);
 
   function unplug() {
-    window.speechSynthesis?.cancel();
+    abortRef.current?.abort();
+    mind?.banish();
+    stopSpeech();
+    setMind(null);
     setSpeaking(false);
     setPhase("idle");
-    setLoadStep(0);
+    setLoads({});
+    setLine("");
   }
 
   const attached = ORGANS.filter((o) => parts.has(o.id));
@@ -175,7 +183,7 @@ export function Lab() {
               <>
                 <p className="readout">
                   {parts.size} of 5 parts stitched
-                  {parts.size > 0 && <span className="readout__dim"> (about {totalMB} MB)</span>}
+                  {parts.size > 0 && <span className="readout__dim"> (up to {totalMB} MB, downloaded once)</span>}
                 </p>
                 <p className="hint">
                   {!built
@@ -186,7 +194,14 @@ export function Lab() {
                 </p>
               </>
             )}
-            {phase === "charging" && <p className="readout readout--hot">Charging the coils…</p>}
+            {phase === "charging" && (
+              <>
+                <p className="readout readout--hot">Charging the coils…</p>
+                <button type="button" className="btn-quiet" onClick={unplug}>
+                  Cut the power
+                </button>
+              </>
+            )}
             {phase === "alive" && (
               <>
                 <p className="readout readout--hot">It's alive.</p>
@@ -197,9 +212,12 @@ export function Lab() {
             )}
           </div>
         </div>
+        {phase === "alive" && mind && (
+          <Talk mind={mind} onLine={setLine} onSpeaking={setSpeaking} />
+        )}
         <p className="note">
-          Preview. Loading is simulated until the runtime is finished; the five parts are the real models we are wiring
-          up next.
+          Every part is a real AI model. Each downloads once from Hugging Face, then runs offline on your device. Your
+          voice and words never leave this tab.
         </p>
       </div>
 
@@ -230,16 +248,38 @@ export function Lab() {
             </p>
           )}
           {phase === "charging" &&
-            attached.map((o, i) => {
-              const share = 1 / attached.length;
-              const local = Math.min(Math.max((loadStep - i * share) / share, 0), 1);
+            attached.map((o) => {
+              if (o.id === "eyes") {
+                return (
+                  <div key={o.id} className="load">
+                    <span className="load__name">{o.name}</span>
+                    <span className="load__bar is-wait">
+                      <span style={{ transform: "scaleX(1)" }} />
+                    </span>
+                    <span className="load__mb">on talk</span>
+                  </div>
+                );
+              }
+              const st = loads[o.id as PartId];
+              const failed = st?.stage === "failed";
+              const f = st?.fraction ?? 0;
               return (
-                <div key={o.id} className="load">
+                <div key={o.id} className={`load${failed ? " is-failed" : ""}`}>
                   <span className="load__name">{o.name}</span>
                   <span className="load__bar">
-                    <span style={{ transform: `scaleX(${local})` }} />
+                    <span style={{ transform: `scaleX(${failed ? 1 : f})` }} />
                   </span>
-                  <span className="load__mb">{Math.round(local * o.approxMB)} MB</span>
+                  <span className="load__mb">
+                    {failed
+                      ? "failed"
+                      : st?.stage === "ready"
+                        ? "ready"
+                        : st?.stage === "warming-up"
+                          ? "warming"
+                          : st?.totalBytes
+                            ? fmtMB(st.loadedBytes)
+                            : `${Math.round(f * 100)}%`}
+                  </span>
                 </div>
               );
             })}
@@ -247,8 +287,15 @@ export function Lab() {
             <>
               <Heartbeat />
               <p className="subtitle">
-                <span>{firstWords(parts)}</span>
+                <span key={line.length < 2 ? line : "reply"}>{line}</span>
               </p>
+              {Object.entries(loads)
+                .filter(([, st]) => st?.stage === "failed" && st.error && st.error.code !== "ABORTED")
+                .map(([id, st]) => (
+                  <p key={id} className="missing">
+                    {ORGAN_BY_ID[id as OrganId].name} {failureLine(id as PartId, st!.error!)}
+                  </p>
+                ))}
             </>
           )}
         </div>
