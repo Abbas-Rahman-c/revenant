@@ -9,8 +9,8 @@ Revenant lets developers build AI apps that run entirely in the browser: no serv
 ## The three layers
 
 1. **The bench** (`circle/`): the runtime. One entry point, `summon(part, options)`, that picks a model the device can run, loads it in a web worker, reports real progress, caches it for offline use and falls back to a lighter model on failure.
-2. **The notebook** (`circle-mcp/`, `power/`): an MCP server and a Kiro power that stop coding agents from inventing local-AI APIs.
-3. **The creature** (`site/`): one app. Visitors stitch five parts onto a body (brain, eyes, ears, voice, memory), throw the switch, and then talk to it through the camera and microphone. It sees, hears, answers out loud and remembers them. It uses only the runtime's public API.
+2. **The notebook** (`circle-mcp/`, `.kiro/steering/local-ai.md`): an MCP server and a verified-facts file that stop coding agents from inventing local-AI model IDs and APIs.
+3. **The creature** (`site/`): one app. Visitors stitch five parts onto a body (brain, eyes, ears, voice, memory), throw the switch, and then talk to it by microphone or keyboard, and open its eyes with the camera. It sees, hears, answers out loud and remembers them. Missing parts change the creature instead of breaking it. It uses only the runtime's public API.
 
 The full wiring plan is `planning/BACKEND_PLAN.md`.
 

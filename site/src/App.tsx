@@ -101,6 +101,11 @@ export default function App() {
           Anatomy: BodyParts3D, © The Database Center for Life Science,{" "}
           <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
         </p>
+        <p className="end__credits">
+          Brain: Llama 3.2 1B (Llama 3.2 Community License) or SmolLM2 360M, through WebLLM. Ears: Whisper tiny.en. Voice:
+          Kokoro 82M. Memory: all-MiniLM-L6-v2, through Transformers.js. Eyes: EfficientDet-Lite0, through MediaPipe. All
+          run on your device.
+        </p>
       </footer>
     </>
   );

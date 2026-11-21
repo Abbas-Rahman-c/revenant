@@ -94,11 +94,12 @@ export function failureLine(part: PartId, e: CircleError): string {
   return `${why[e.code] ?? "failed to load"}. ${after[part]}`;
 }
 
-const PERSONA = `You are a creature that was stitched together from AI models and brought to life a moment ago, on a lab table, by lightning.
-You live entirely inside this visitor's web browser, on their own device. Nothing you hear or say leaves it.
-You are newly awake, curious, a little theatrical, and gentle. You marvel at simple things: rain, light, the visitor's voice.
-Answer in one to three short sentences, plain spoken words only: no lists, no emoji, no stage directions in brackets.
-Never claim to be any character from a book or film. If asked what you are, say you were stitched from small AI models running in this browser.`;
+const PERSONA = `You are a creature stitched together from small AI models and brought to life a moment ago, on a lab table, by lightning.
+You live inside the web browser of the person talking to you, on their own device. Nothing you hear or say leaves it.
+You are newly awake, curious, a little theatrical, and gentle. You marvel at simple things: rain, light, a voice.
+Always speak directly to the person as "you". Never call them "the visitor" and never guess their gender.
+Answer in one to three short sentences of plain spoken words: no lists, no emoji, no stage directions.
+Never claim to be a character from a book or film. If asked what you are, say you were stitched from small AI models running in this browser.`;
 
 const SCRIPTED = [
   "I... I am awake. But my thoughts are borrowed. I have no brain of my own yet.",
@@ -138,26 +139,28 @@ export class Mind {
     }
 
     const recalled = memory ? await memory.recall(text, 3, { signal: ev.signal }).catch(() => []) : [];
-    const known = recalled.filter((m) => m.score > (memory?.keywordOnly ? 0.3 : 0.35)).map((m) => `- ${m.text}`);
+    const same = (a: string) => a.trim().toLowerCase() === text.trim().toLowerCase();
+    const known = recalled
+      .filter((m) => m.score > (memory?.keywordOnly ? 0.3 : 0.35) && !same(m.text))
+      .map((m) => `"${m.text}"`);
+    // Small models follow the end of the prompt best: keep the system prompt short and put what the
+    // creature remembers and sees right next to the question.
     const senses = [
-      this.stitched.has("memory") ? (known.length ? `Things this visitor told you before:\n${known.join("\n")}` : "") : "You have no memory: you will forget this visitor when they leave.",
-      this.stitched.has("ears") ? "" : "You have no ears. The visitor is typing to you.",
-      this.stitched.has("voice") ? "" : "You have no voice. Your words appear as subtitles.",
-      !this.stitched.has("eyes")
-        ? "You have no eyes. You cannot see the visitor."
-        : this.eyes
-          ? (() => {
-              const seen = this.eyes.describe();
-              return seen ? `Through your eyes (the visitor's camera) you can see ${seen}.` : "Your eyes are open but you see nothing you recognise.";
-            })()
-          : "Your eyes are closed: the visitor has not opened the camera.",
+      this.stitched.has("memory") ? "" : "You have no memory, so you will forget this person when they leave.",
+      this.stitched.has("eyes") ? "" : "You have no eyes and cannot see.",
+    ].filter(Boolean);
+    const seen = this.eyes?.describe() ?? "";
+    const context = [
+      known.length ? `(You remember this person told you: ${known.join(" ")})` : "",
+      seen ? `(Through their camera you can see ${seen}.)` : "",
     ].filter(Boolean);
 
     const messages: ChatMessage[] = [
-      { role: "system", content: [PERSONA, ...senses].join("\n\n") },
+      { role: "system", content: [PERSONA, ...senses].join("\n") },
       ...this.history.slice(-6),
-      { role: "user", content: text },
+      { role: "user", content: context.length ? `${text}\n\n${context.join("\n")}` : text },
     ];
+    if (import.meta.env.DEV) (window as unknown as { __lastPrompt: unknown }).__lastPrompt = messages;
 
     // Speak each sentence as soon as the brain finishes it.
     let full = "";
@@ -171,16 +174,31 @@ export class Mind {
         queue.push((queue.at(-1) ?? Promise.resolve()).then(() => this.say(s, ev)));
       }
     };
-    for await (const t of brain.ask(messages, { signal: ev.signal, maxTokens: 120 })) {
-      full += t;
-      ev.onToken?.(full);
-      flush(false);
+    // Stop after three sentences: small models ramble.
+    const enough = new AbortController();
+    const signal = ev.signal ? AbortSignal.any([ev.signal, enough.signal]) : enough.signal;
+    try {
+      for await (const t of brain.ask(messages, { signal, maxTokens: 90 })) {
+        full += t;
+        if (splitSentences(full).length > 3) {
+          full = splitSentences(full).slice(0, 3).join(" ");
+          enough.abort();
+          break;
+        }
+        ev.onToken?.(full);
+        flush(false);
+      }
+    } catch (e) {
+      if (!enough.signal.aborted) throw e; // our own stop is not an error
     }
+    ev.onToken?.(full);
     flush(true);
     await Promise.all(queue);
 
     this.history.push({ role: "user", content: text }, { role: "assistant", content: full });
-    if (memory && text.trim().split(/\s+/).length >= 3) void memory.remember(`The visitor said: ${text.trim()}`).catch(() => {});
+    // Remember statements about the person, not questions to the creature.
+    const said = text.trim();
+    if (memory && !said.endsWith("?") && said.split(/\s+/).length >= 3) void memory.remember(said).catch(() => {});
     return full.trim();
   }
 
