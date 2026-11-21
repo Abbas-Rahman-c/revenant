@@ -8,6 +8,8 @@
   ],
   "scripts": {
     "dev": "npm run dev -w site",
-    "build": "npm run build -w site"
+    "build": "npm run build -w site",
+    "test": "npm test -w circle && npm test -w circle-mcp",
+    "check": "node scripts/check-local-ai.mjs && node scripts/check-registry.mjs && npm test && npm run build"
   }
 }
