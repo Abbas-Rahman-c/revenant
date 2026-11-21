@@ -5,7 +5,7 @@ import type { CreatureSceneHandle } from "./CreatureBody";
 import { KnifeSwitch } from "./KnifeSwitch";
 import { ORGANS, ORGAN_BY_ID, firstWords, type OrganId } from "../organs";
 import { playCharge, playClack, playHeartbeat, playStitch, playZap, stopSpeech } from "../sound";
-import { Mind, failureLine, summonParts, type PartState } from "../mind";
+import { Mind, deviceSigil, failureLine, summonParts, type PartState } from "../mind";
 import { Talk } from "./Talk";
 import { splitSentences, type PartId } from "circle";
 
@@ -45,6 +45,10 @@ export function Lab() {
   const [mind, setMind] = useState<Mind | null>(null);
   const [line, setLine] = useState("");
   const abortRef = useRef<AbortController | null>(null);
+  const [tier, setTier] = useState<"tiny" | "small" | "full" | null>(null);
+  useEffect(() => {
+    deviceSigil().then((s) => setTier(s.tier === "none" ? "tiny" : s.tier));
+  }, []);
   const [flash, setFlash] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [stageRoot, setStageRoot] = useState<HTMLElement | null>(null);
@@ -148,7 +152,9 @@ export function Lab() {
     const m = new Mind(handles, parts);
     setMind(m);
     setPhase("alive");
-    const first = firstWords(parts);
+    // its first words depend on what actually came alive (a stitched brain that failed to load counts as missing)
+    const living = new Set([...parts].filter((p) => p === "eyes" || p === "voice" || p in handles));
+    const first = firstWords(living);
     setLine(first);
     window.setTimeout(() => void m.say(first, { onSpeaking: setSpeaking }), 700);
   }, [phase, parts]);
@@ -165,7 +171,7 @@ export function Lab() {
   }
 
   const attached = ORGANS.filter((o) => parts.has(o.id));
-  const totalMB = attached.reduce((s, o) => s + o.approxMB, 0);
+  const totalMB = attached.reduce((s, o) => s + (tier ? o.tierMB[tier] : o.approxMB), 0);
 
   return (
     <section className={`lab lab--${phase}${built ? "" : " is-building"}${intro ? " has-intro" : ""}${entered ? " is-entered" : ""}`} aria-labelledby="lab-h">
@@ -188,7 +194,11 @@ export function Lab() {
               <>
                 <p className="readout">
                   {parts.size} of 5 parts stitched
-                  {parts.size > 0 && <span className="readout__dim"> (up to {totalMB} MB, downloaded once)</span>}
+                  {parts.size > 0 && (
+                    <span className="readout__dim">
+                      {totalMB > 0 ? ` (${totalMB} MB for this device, downloaded once)` : " (nothing to download on this device)"}
+                    </span>
+                  )}
                 </p>
                 <p className="hint">
                   {!built
@@ -221,8 +231,8 @@ export function Lab() {
           <Talk mind={mind} hasEyes={parts.has("eyes")} onLine={setLine} onSpeaking={setSpeaking} />
         )}
         <p className="note">
-          Every part is a real AI model. Each downloads once from Hugging Face, then runs offline on your device. Your
-          voice and words never leave this tab.
+          Every part is a real AI model. Each downloads once, then runs offline on your device. Your voice, face and words
+          never leave this tab.
         </p>
       </div>
 

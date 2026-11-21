@@ -11,6 +11,8 @@ export type Organ = {
   tech: string;
   /** Largest download for this part (the full tier), measured. Smaller devices get smaller models. */
   approxMB: number;
+  /** Measured download per device tier. 0 means the part does not download a model on that tier. */
+  tierMB: { tiny: number; small: number; full: number };
   /** Socket position on the creature, in the creature's 320 x 520 viewBox. */
   socket: { x: number; y: number };
 };
@@ -23,6 +25,7 @@ export const ORGANS: Organ[] = [
     model: "Small language model (Llama 3.2 1B)",
     tech: "WebGPU",
     approxMB: 663,
+    tierMB: { tiny: 0, small: 194, full: 663 },
     socket: { x: 160, y: 62 },
   },
   {
@@ -31,7 +34,8 @@ export const ORGANS: Organ[] = [
     does: "Sees what the camera sees",
     model: "Object detection",
     tech: "MediaPipe and WebAssembly",
-    approxMB: 6,
+    approxMB: 7,
+    tierMB: { tiny: 7, small: 7, full: 7 },
     socket: { x: 160, y: 118 },
   },
   {
@@ -41,6 +45,7 @@ export const ORGANS: Organ[] = [
     model: "Speech to text (Whisper)",
     tech: "WebAssembly",
     approxMB: 42,
+    tierMB: { tiny: 42, small: 42, full: 42 },
     socket: { x: 98, y: 132 },
   },
   {
@@ -50,6 +55,7 @@ export const ORGANS: Organ[] = [
     model: "Text to speech (Kokoro)",
     tech: "WebGPU and Web Audio",
     approxMB: 311,
+    tierMB: { tiny: 0, small: 0, full: 311 },
     socket: { x: 160, y: 214 },
   },
   {
@@ -59,6 +65,7 @@ export const ORGANS: Organ[] = [
     model: "Text embeddings (MiniLM)",
     tech: "IndexedDB",
     approxMB: 23,
+    tierMB: { tiny: 0, small: 23, full: 23 },
     socket: { x: 196, y: 300 },
   },
 ];

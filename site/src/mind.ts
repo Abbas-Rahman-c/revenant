@@ -87,7 +87,7 @@ export function failureLine(part: PartId, e: CircleError): string {
   };
   const after: Record<PartId, string> = {
     brain: "It wakes, but can only repeat what it was taught.",
-    voice: "It will answer in subtitles, with the browser's own voice.",
+    voice: "It will speak with the browser's built-in voice instead.",
     ears: "Type to it instead.",
     memory: "It will forget you when you leave.",
   };
