@@ -1,7 +1,11 @@
 {
   "name": "revenant",
   "private": true,
-  "workspaces": ["site", "circle"],
+  "workspaces": [
+    "site",
+    "circle",
+    "circle-mcp"
+  ],
   "scripts": {
     "dev": "npm run dev -w site",
     "build": "npm run build -w site"

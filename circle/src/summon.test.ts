@@ -255,3 +255,17 @@ describe("summon units", () => {
     expect(c.alive).toBe(true);
   });
 });
+
+describe("summon and the device sigil", () => {
+  it("a part that needs a bigger tier than the device allows gives the device's reason", async () => {
+    const sigil = {
+      facts: { webgpu: true, freeStorageMB: 700 },
+      tier: "tiny" as const,
+      reasons: ["LOW_STORAGE" as const],
+    };
+    await expect(summon("brain", { sigil, createWorker: () => fakeWorker(echoImpl()) })).rejects.toMatchObject({
+      code: "LOW_STORAGE",
+      part: "brain",
+    });
+  });
+});

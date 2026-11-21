@@ -47,6 +47,12 @@ export function createBrainImpl(): PartImpl {
           ctx.progress({ stage: warming ? "warming-up" : "downloading", fraction: Math.min(0.99, r.progress), fromCache: cached });
         },
       })) as unknown as Engine;
+      // The first generation compiles the GPU shaders (measured: ~30 s on an Intel laptop GPU).
+      // Do it now, during "warming up", so the creature's first answer is quick.
+      ctx.progress({ stage: "warming-up", fraction: 0.99, fromCache: cached });
+      const warm = await engine.chat.completions.create({ messages: [{ role: "user", content: "Hi" }], stream: true, max_tokens: 2 });
+      for await (const _ of warm) void _;
+      await engine.resetChat();
       ctx.progress({ stage: "ready", fraction: 1, fromCache: cached });
     },
     ops: {

@@ -37,10 +37,20 @@ export function defaultWorker(part: PartId): WorkerLike {
   }
 }
 
-async function startTier(opts: SummonOptions): Promise<Tier> {
-  if (opts.tier && opts.tier !== "auto") return opts.tier;
+async function startTier(opts: SummonOptions): Promise<{ tier: Tier; limit?: { code: CircleError["code"]; message: string } }> {
+  if (opts.tier && opts.tier !== "auto") return { tier: opts.tier };
   const sigil = opts.sigil ?? (await probeDevice());
-  return sigil.tier === "none" ? "tiny" : sigil.tier;
+  const tier = sigil.tier === "none" ? "tiny" : sigil.tier;
+  // Why the device was held to this tier, so a part that needs more can say the real reason.
+  const r = sigil.reasons;
+  const limit = r.includes("NO_WEBGPU")
+    ? { code: "NO_WEBGPU" as const, message: "This browser does not offer WebGPU." }
+    : r.includes("LOW_STORAGE")
+      ? { code: "LOW_STORAGE" as const, message: "Not enough free storage for a larger model." }
+      : r.includes("LOW_MEMORY") || r.includes("SMALL_GPU_BUFFER")
+        ? { code: "OUT_OF_MEMORY" as const, message: "Not enough memory for a larger model." }
+        : undefined;
+  return { tier, limit };
 }
 
 export async function summon<P extends PartId>(part: P, opts: SummonOptions = {}): Promise<HandleFor<P>> {
@@ -48,11 +58,11 @@ export async function summon<P extends PartId>(part: P, opts: SummonOptions = {}
   if (opts.signal?.aborted) throw aborted();
 
   let start: Tier;
+  let limit: { code: CircleError["code"]; message: string } | undefined;
   try {
-    start = await startTier(opts);
-  } catch (e) {
+    ({ tier: start, limit } = await startTier(opts));
+  } catch {
     start = "tiny"; // probing failed: be conservative
-    void e;
   }
 
   let last: CircleError | null = null;
@@ -80,6 +90,8 @@ export async function summon<P extends PartId>(part: P, opts: SummonOptions = {}
       last = err;
     }
   }
+  // Nothing ran. If no tier was even attempted and the device was held back, give the device's reason.
+  if (limit && last && tiersFrom(start).every((t) => !entryFor(part, t))) throw circleError(limit.code, part, limit.message);
   throw last ?? circleError("MODEL_LOAD_FAILED", part, `The ${part} could not be loaded.`);
 }
 

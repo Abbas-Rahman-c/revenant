@@ -420,12 +420,12 @@ export const CreatureBody = forwardRef<CreatureSceneHandle, Props>(function Crea
     const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.09, 20, 14), lampMat);
     lamp.position.set(0, -0.72, 0.1);
     gaugeWall.add(lamp);
-    import("../probe").then(({ probeDevice }) =>
-      probeDevice().then((sig) => {
-        const frac = [(sig.memoryGB ?? 0) / 8, (sig.storageGB ?? 0) / 10, (sig.cores ?? 0) / 16];
+    import("../mind").then(({ deviceSigil }) =>
+      deviceSigil().then(({ facts }) => {
+        const frac = [(facts.memoryGB ?? 0) / 8, (facts.freeStorageMB ?? 0) / 1024 / 10, (facts.cores ?? 0) / 16];
         // dials sweep 240 degrees, from 120 (left) to -120 (right)
         frac.forEach((f, i) => (needles[i].target = ((120 - Math.min(f, 1) * 240) * Math.PI) / 180));
-        lampMat.emissiveIntensity = sig.webgpu ? 2.4 : 0;
+        lampMat.emissiveIntensity = facts.webgpu ? 2.4 : 0;
       }),
     );
 

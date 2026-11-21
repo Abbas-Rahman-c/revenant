@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "circle": {
+      "command": "node",
+      "args": ["circle-mcp/src/server.mjs"],
+      "disabled": false,
+      "autoApprove": ["verified_models", "check_model_id", "webllm_models", "choose_tier"]
+    }
+  }
+}

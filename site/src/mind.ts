@@ -41,7 +41,12 @@ export type Handles = {
 const RUNTIME_PARTS: PartId[] = ["brain", "voice", "ears", "memory"]; // brain first: it is the slowest
 
 let sigilPromise: Promise<Sigil> | null = null;
-export const deviceSigil = () => (sigilPromise ??= probeDevice());
+/** The device sigil, probed once. `?tier=tiny|small|full` in the address overrides the tier (for demos and testing). */
+export const deviceSigil = () =>
+  (sigilPromise ??= probeDevice().then((s) => {
+    const forced = new URLSearchParams(location.search).get("tier");
+    return forced === "tiny" || forced === "small" || forced === "full" ? { ...s, tier: forced, reasons: [] } : s;
+  }));
 
 /** Summons every stitched part in parallel. Resolves when each has loaded or failed. */
 export async function summonParts(

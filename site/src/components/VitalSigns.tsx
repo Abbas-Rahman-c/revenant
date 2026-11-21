@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { probeDevice, type Sigil } from "../probe";
+import type { Sigil } from "circle";
+import { deviceSigil } from "../mind";
 
 type GaugeProps = {
   label: string;
@@ -50,10 +51,13 @@ function Gauge({ label, value, max, unit, digits = 0, live }: GaugeProps) {
 }
 
 const tierCopy: Record<Sigil["tier"], { name: string; text: string }> = {
-  tiny: { name: "Tiny", text: "Ears and memory run well here, on the processor. A full creature will be slow." },
-  small: { name: "Small", text: "A complete creature with a small brain, accelerated by your graphics card." },
-  full: { name: "Full", text: "Room for the largest brain and every part at once, on your graphics card." },
+  none: { name: "Dormant", text: "No room for models here. The creature can still wake, with borrowed words." },
+  tiny: { name: "Tiny", text: "Ears and a keyword memory run here, on the processor. No graphics card for a brain or a voice." },
+  small: { name: "Small", text: "A small brain (SmolLM2 360M) on your graphics card, with ears and memory. The browser lends its voice." },
+  full: { name: "Full", text: "The largest brain (Llama 3.2 1B) and the Kokoro voice, all on your graphics card." },
 };
+
+const GB = 1024;
 
 /** Real readings from this browser, shown as a lab instrument panel. */
 export function VitalSigns() {
@@ -62,7 +66,7 @@ export function VitalSigns() {
   const panel = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    probeDevice().then(setSigil);
+    deviceSigil().then(setSigil);
   }, []);
 
   useEffect(() => {
@@ -89,16 +93,16 @@ export function VitalSigns() {
       </div>
       <div className="vitals__panel" ref={panel}>
         <div className="vitals__gauges">
-          <Gauge label="Memory" value={sigil?.memoryGB} max={8} unit="GB+" live={live && !!sigil} />
-          <Gauge label="Storage free for models" value={sigil?.storageGB} max={10} unit="GB" digits={1} live={live && !!sigil} />
-          <Gauge label="Processor threads" value={sigil?.cores} max={16} unit="" live={live && !!sigil} />
+          <Gauge label="Memory" value={sigil?.facts.memoryGB} max={8} unit="GB+" live={live && !!sigil} />
+          <Gauge label="Storage free for models" value={sigil?.facts.freeStorageMB === undefined ? undefined : sigil.facts.freeStorageMB / GB} max={10} unit="GB" digits={1} live={live && !!sigil} />
+          <Gauge label="Processor threads" value={sigil?.facts.cores} max={16} unit="" live={live && !!sigil} />
         </div>
         <div className="vitals__verdict">
           <p className="vitals__lamp">
-            <span className={`lamp${sigil?.webgpu ? " is-on" : ""}`} aria-hidden="true" />
-            {sigil ? (sigil.webgpu ? "WebGPU is on" : "No WebGPU") : "Reading…"}
+            <span className={`lamp${sigil?.facts.webgpu ? " is-on" : ""}`} aria-hidden="true" />
+            {sigil ? (sigil.facts.webgpu ? "WebGPU is on" : "No WebGPU") : "Reading…"}
           </p>
-          {sigil?.gpuName && <p className="vitals__gpu">{sigil.gpuName}</p>}
+          {sigil?.facts.gpuName && <p className="vitals__gpu">{sigil.facts.gpuName}</p>}
           {sigil && (
             <>
               <p className="vitals__tier">{tierCopy[sigil.tier].name} creature</p>

@@ -56,7 +56,8 @@ import { KokoroTTS } from "kokoro-js";
 const tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", { dtype: "fp32", device: "webgpu", progress_callback: (p) => console.log(p) });
 const audio = await tts.generate("Hello, I am Revenant.", { voice: "af_heart" });
 ```
-- Gotchas: WASM q8 measured 9434 ms for 1.98 s of audio (4.8x slower than real time). The WebGPU real-time factor has not been recorded yet. The worker falls back from WebGPU fp32 to WASM q8 if WebGPU fails.
+- Measured 2026-11-21 on WebGPU fp32 (built-in browser pane, Intel Gen12 laptop GPU): 310.5 MB download (byte progress). Streaming "It's alive. I can hear the rain against the glass. Who are you, and why did you wake me?" one sentence at a time: 1.75 s of audio in 1.67 s, 2.98 s in 2.62 s, 3.05 s in 1.70 s, so real-time factor 0.56 to 0.95 (faster than real time) and the first sentence plays after 1.7 s.
+- Gotchas: WASM q8 measured 9434 ms for 1.98 s of audio (4.8x slower than real time), so WASM is not used. With a small storage quota (~1 GB per site) the 310 MB model may not be cached and downloads again next visit. The worker falls back from WebGPU fp32 to WASM q8 if WebGPU fails.
 - Fallback if Kokoro fails: Xenova/speecht5_tts, then the browser's built-in voice.
 - Per-tier decision: full = Kokoro on WebGPU; small and tiny = browser voice (Kokoro is too slow on WASM).
 
@@ -97,7 +98,8 @@ import { CreateMLCEngine } from "@mlc-ai/web-llm";
 const engine = await CreateMLCEngine("SmolLM2-360M-Instruct-q4f16_1-MLC", { initProgressCallback: (r) => console.log(r.progress, r.text) });
 for await (const c of await engine.chat.completions.create({ messages: [{ role: "user", content: "Hi" }], stream: true })) console.log(c.choices[0]?.delta?.content);
 ```
-- Gotchas: runs inside our own worker (WebGPU is available in workers). Choose the q4f32 build when `adapter.features.has("shader-f16")` is false. Progress is a fraction only.
+- Measured 2026-11-21 (built-in browser pane, Intel Gen12 laptop GPU with shader-f16, slow network ~1 MB/s): SmolLM2-360M-Instruct-q4f16_1-MLC is 7 weight files of ~32 MB (about 220 MB); load 268 s on first visit. First question: first token after 31 s (shader compile), so the brain now warms up with a 2-token generation while loading. Second question: first token 1.1 s, 34 tokens in 5.7 s.
+- Gotchas: runs inside our own worker (WebGPU is available in workers). Progress only moves when a whole ~32 MB weight file finishes, so on a slow network it sits at 0% for a while. Choose the q4f32 build when `adapter.features.has("shader-f16")` is false. Progress is a fraction only.
 
 ### Ears - VERIFIED in the test bench
 
@@ -114,6 +116,7 @@ import { pipeline } from "@huggingface/transformers";
 const asr = await pipeline("automatic-speech-recognition", "onnx-community/whisper-tiny.en", { device: "wasm", dtype: "q8" });
 const { text } = await asr(new Float32Array(16000));
 ```
+- Measured 2026-11-21: transcribed the voice part's own audio of "I can hear the rain against the glass." exactly, in 2.4 s for 3 s of audio (WASM q8). Reload from storage: 9.4 s.
 - Gotchas: Whisper returns things like "[BLANK_AUDIO]" for silence; the ears part turns those into an empty string.
 
 ### Progress events (Transformers.js and Kokoro)
